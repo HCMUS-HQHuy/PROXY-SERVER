@@ -11,8 +11,6 @@ set output=./BIN/demo.exe
 
 if not exist "%obj_dir%" mkdir "%obj_dir%"
 
-
-
 for %%f in (%src_dir%/*.cpp) do (
     set src_file=%src_dir%/%%f
     set obj_file=%obj_dir%/%%~nf.o

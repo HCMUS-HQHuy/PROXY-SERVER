@@ -7,22 +7,21 @@ WSADATA wsaData;
 SOCKET localSocket, remoteSocket;
 
 // Function to parse and get the host name from the HTTP request
-std::string getHostFromRequest(const std::string& request) {
-    std::cout << request << '\n';
-    std::istringstream stream(request);
-    std::string line;
-
-    // Iterate over the header lines to find the "Host" field
-    while (std::getline(stream, line)) {
-        if (line.find("Host:") != std::string::npos) {
-            // Extract the host name from the "Host: ..." line
-            std::string tmp = line.substr(6);
-            while (tmp.back() != ':') tmp.pop_back();
-            tmp.pop_back();
-            return tmp;
-        }
+bool getHostFromRequest(const std::string request, std::string &hostname, int &port) {
+    port = 80;
+    std::string doman = request.substr(request.find("Host: ") + 6);
+    size_t colonPos = doman.find(':');  
+    if (colonPos != std::string::npos) {
+        hostname = doman.substr(0, colonPos);           // Lấy phần tên miền
+        port = std::stoi(doman.substr(colonPos + 1));   // Lấy phần cổng
+    } else {
+        hostname = doman;  // Nếu không có cổng, dùng tên miền như đã nhập
     }
-    return "";
+    if (hostname.empty()) {
+        std::cerr << "Host not found in request." << std::endl;
+        return false;
+    }  
+    return true;
 }
 
 void closeAll();
@@ -30,7 +29,7 @@ bool isInitializedWinsock();
 bool isInitializedSocket(SOCKET &socket);
 bool bindSocketToAdressPort(ADDRESS_FAMILY, u_long, int);
 bool handleClient();
-
+ 
 int runServerProxy() {
     WSADATA wsaData; if (not isInitializedWinsock()) return EXISTS_ERORRS;
     if (not isInitializedSocket(localSocket)) return EXISTS_ERORRS;
@@ -109,11 +108,10 @@ bool handleClient() {
     }
 
     // Receive request from client
-    char buffer[4096];
-    int recvSize;
+    char buffer[9000];
+    int recvSize = 10;
     recvSize = recv(clientSocket, buffer, sizeof(buffer), 0);
-    std::cerr << buffer << '\n';
-    if (recvSize == SOCKET_ERROR || recvSize == 0) {
+    if (recvSize == SOCKET_ERROR) {
         std::cerr << "Error receiving request from client." << std::endl;
         closesocket(clientSocket);
         closeAll();
@@ -122,32 +120,26 @@ bool handleClient() {
 
     // Convert request to string and get the host name
     std::string request(buffer, recvSize);
-    std::string host = getHostFromRequest(request);
-    if (host.empty()) {
-        std::cerr << "Host not found in request." << std::endl;
-        closesocket(clientSocket);
-        closeAll();
-        return false;
-    }
-
-    // Create a socket to connect to the remote server
-    if (not isInitializedSocket(remoteSocket)) return EXISTS_ERORRS;
-
-    // Resolve the host name to an IP address
-    std::cerr << host << '\n';
+    std::cerr << request << "\n";
+    std::string host; int port; getHostFromRequest(request, host, port);
     hostent* hostInfo = gethostbyname(host.c_str());
+    // Resolve the host name to an IP address
     if (hostInfo == NULL) {
         std::cerr << "Failed to resolve host name." << std::endl;
         closesocket(clientSocket);
         closeAll();
         return false;
-    }
 
+    }
+    const char* connectResponse = "HTTP/1.1 200 Connection Established\r\n\r\n";
+    send(clientSocket, connectResponse, strlen(connectResponse), 0);
+    // Create a socket to connect to the remote server
+    if (not isInitializedSocket(remoteSocket)) return EXISTS_ERORRS;
     // Set the remote server address
     sockaddr_in remoteAddr;
     remoteAddr.sin_family = AF_INET;
-    remoteAddr.sin_port = htons(80); // Assume HTTP connection on port 80
-    remoteAddr.sin_addr.s_addr = *((unsigned long*)hostInfo->h_addr);
+    remoteAddr.sin_port = htons(port); 
+    remoteAddr.sin_addr.s_addr = *((unsigned long*)hostInfo->h_addr_list[0]);
 
     // Connect to the remote server
     if (connect(remoteSocket, (sockaddr*)&remoteAddr, sizeof(remoteAddr)) == SOCKET_ERROR) {
@@ -157,16 +149,28 @@ bool handleClient() {
         return false;
     }
 
-    std::cout << "Connected to remote server: " << host << std::endl;
+    fd_set readfds;
+    while (true) {
+        const int bufferSize = 4096;
+        FD_ZERO(&readfds);
+        FD_SET(clientSocket, &readfds);
+        FD_SET(remoteSocket, &readfds);
 
-    // Send the request to the remote server
-    send(remoteSocket, request.c_str(), request.length(), 0);
+        int activity = select(0, &readfds, nullptr, nullptr, nullptr);
+        if (activity <= 0) break;
 
-    // Receive and forward response to the client
-    while ((recvSize = recv(remoteSocket, buffer, sizeof(buffer), 0)) > 0) {
-        std::cerr << "get\n";
-        send(clientSocket, buffer, recvSize, 0);
-        std::cerr << "Finish get\n";
+        if (FD_ISSET(clientSocket, &readfds)) {
+            int bytesReceived = recv(clientSocket, buffer, bufferSize, 0);
+            if (bytesReceived <= 0) break;
+            send(remoteSocket, buffer, bytesReceived, 0);
+        }
+
+        if (FD_ISSET(remoteSocket, &readfds)) {
+            int bytesReceived = recv(remoteSocket, buffer, bufferSize, 0);
+            if (bytesReceived <= 0) break;
+            send(clientSocket, buffer, bytesReceived, 0);
+        }
+        std::cerr << "RUNNING...\n";
     }
     closesocket(clientSocket);
     return true;
