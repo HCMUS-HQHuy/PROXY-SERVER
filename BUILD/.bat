@@ -47,16 +47,16 @@ if errorlevel 1 (
     exit /b %errorlevel%
 ) else (
     echo Build succeeded. 
-    @REM Code is running...
-    @REM echo ----------------***----------------
+    echo Code is running...
+    echo ----------------***----------------
 )
 
 :: Run the executable
-@REM %NameExeFile%
-@REM set return_code=%errorlevel%
+"%output%"
+set return_code=%errorlevel%
 
 :: Display the return code from the executable
-@REM echo ----------------***----------------
-@REM echo Program returned: %return_code%
+echo ----------------***----------------
+echo Program returned: %return_code%
 
-exit /b @REM %return_code%
+exit /b %return_code%

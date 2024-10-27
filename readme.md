@@ -27,3 +27,10 @@
 * It is a notification for Windows and Windows contributes networking resource for software.
 * If we ignore `WSAStartup`, functions `socket()`, `bind()`, `listen()`, `accept()` will be failed
 * **IMPORTANT!!**: Free Winsock when the programe finished (`WSACleanup`).
+## select:
+### The macros to manipulate and check fd+set contents:
+* *FD_ZERO(\*set)*: initialize set to the empty set. A set should always be cleared before using.
+* *FD_CLS(s, \*set)*`: removes socket from set.
+* *FD_ISSET(s, \*set)*: checks to se if `s` is a membet of set and returns TRUE if so.
+* *FD_SET(s, \*set)*: adds socket `s` to set.
+After run `select` a while, the readfds will remove sockets that are not activated. 

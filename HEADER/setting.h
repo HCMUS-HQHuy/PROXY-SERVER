@@ -7,6 +7,8 @@
 #include <sstream>
 
 #define LOCAL_PORT 8080
+#define HTTPS_PORT 443
+#define HTTP_PORT 80
 #define EXISTS_ERORRS -1
 
 #endif
