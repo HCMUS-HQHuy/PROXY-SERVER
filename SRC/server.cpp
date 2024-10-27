@@ -16,7 +16,7 @@ bool getHostFromRequest(const std::string request, std::string &hostname, int &p
     if (port == HTTP_PORT) {
         hostname = doman.substr(0, doman.find('\n'));
         while (not IsCharAlpha(hostname.back())) hostname.pop_back();
-        std::cerr << "HTTP request! ->" << hostname << '\n';
+        // std::cerr << "HTTP request! ->" << hostname << '\n';
 
         if (hostname.empty()) {
             std::cerr << "Host not found in request." << std::endl;
@@ -60,8 +60,7 @@ int runServerProxy() {
     std::cout << "Proxy is listening on port " << LOCAL_PORT << "..." << std::endl;
 
     while (true) {
-        // std::cerr << "START socket\n";
-        SOCKET clientSocket = accept(localSocket, NULL, NULL);
+        SOCKET clientSocket = accept(localSocket, nullptr, nullptr);
         if (clientSocket == INVALID_SOCKET) {
             std::cerr << "Error accepting connection from client." << std::endl;
             closesocket(remoteSocket);
@@ -72,7 +71,6 @@ int runServerProxy() {
         if (handleClient(clientSocket) == false) 
             std::cerr << "HAVE SOME PROBLEMS\n";
         closesocket(clientSocket);
-        // std::cerr << "END socket\n\n";
     }
     closesocket(remoteSocket);
     closesocket(localSocket);
@@ -123,8 +121,7 @@ bool bindSocketToAdressPort(ADDRESS_FAMILY sin_family, u_long s_address, int por
 bool handleClient(SOCKET &clientSocket) {
     // Receive request from client
     char buffer[9000];
-    int recvSize = 10;
-    recvSize = recv(clientSocket, buffer, sizeof(buffer), 0);
+    int recvSize = recv(clientSocket, buffer, sizeof(buffer), 0);
     if (recvSize == SOCKET_ERROR || recvSize == 0) {
         std::cerr << "Error receiving request from client." << std::endl;
         return false;
@@ -135,7 +132,7 @@ bool handleClient(SOCKET &clientSocket) {
     std::string host; int port; getHostFromRequest(request, host, port);
     hostent* hostInfo = gethostbyname(host.c_str());
     // Resolve the host name to an IP address
-    if (hostInfo == NULL) {
+    if (hostInfo == nullptr) {
         std::cerr << "Failed to resolve host name." << std::endl;
         return false;
     }
@@ -153,11 +150,11 @@ bool handleClient(SOCKET &clientSocket) {
         std::cerr << "Error connecting to remote server." << std::endl;
         return false;
     }
+
     if (port == HTTPS_PORT) {
         const char* connectResponse = "HTTP/1.1 200 Connection Established\r\n\r\n";
         send(clientSocket, connectResponse, strlen(connectResponse), 0);
     }
-
 
     fd_set readfds;
     int step = 0;
@@ -166,7 +163,7 @@ bool handleClient(SOCKET &clientSocket) {
         FD_ZERO(&readfds);
         FD_SET(clientSocket, &readfds);
         FD_SET(remoteSocket, &readfds);
-        TIMEVAL delay; delay.tv_sec = 4; delay.tv_usec=0;
+        TIMEVAL delay; delay.tv_sec = 2; delay.tv_usec=0;
         int activity = select(0, &readfds, nullptr, nullptr, (TIMEVAL*)&delay);
         if (activity <= 0) break;
         int cnt = 0;
