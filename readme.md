@@ -20,3 +20,10 @@
 * Get information HOST of client and create remoteSocket to connect to server.
 * Send request from client to server through out `remoteSocket`
 * Get data from `remoteSocket` and send to `clientSocket`.
+
+# Further note knowledge for this project
+## WSAStartup: 
+* `WSAStartup` initialize resource and config for winsock library, maintain version for system `MAKEWORD(2, 2)`.
+* It is a notification for Windows and Windows contributes networking resource for software.
+* If we ignore `WSAStartup`, functions `socket()`, `bind()`, `listen()`, `accept()` will be failed
+* **IMPORTANT!!**: Free Winsock when the programe finished (`WSACleanup`).

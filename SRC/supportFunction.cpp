@@ -1,5 +1,4 @@
-#include "../HEADER/supportFunction.h"
-#include <iostream>
+#include "../HEADER/setting.h"
 
 
 bool receiveMSG(SOCKET socket, char *buffer, int len) {
