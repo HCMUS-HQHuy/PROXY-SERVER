@@ -15,8 +15,6 @@ bool receiveMSG(SOCKET socket, char *buffer, int len) {
         return false;
     }
 
-    // Xử lý dữ liệu nhận được
-    buffer[bytesReceived] = '\0'; // Thêm ký tự kết thúc chuỗi
     std::cout << "Received message: " << buffer << std::endl;
 
     return true;
