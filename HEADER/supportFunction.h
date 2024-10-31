@@ -3,7 +3,7 @@
 
 #include "../HEADER/setting.h"
 
-bool receiveMSG(SOCKET socket, char *buffer, int len);
-bool sendMSG(SOCKET socket, char *buffer, int len);
+bool receiveMSG(SOCKET socket, char *buffer, int &len);
+bool sendMSG(SOCKET socket, char *buffer, int &len);
 
 #endif 

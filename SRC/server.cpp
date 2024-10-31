@@ -8,16 +8,12 @@ SOCKET localSocket, remoteSocket;
 
 // Function to parse and get the host name from the HTTP request
 bool getHostFromRequest(const std::string request, std::string &hostname, int &port) {
-    std::cerr << "REQUEST: \n" << request << '\n';
-    std::cerr << "END REQUEST!!\n";
     port = (request.find("CONNECT") == 0 ? HTTPS_PORT : HTTP_PORT);
     std::string doman = request.substr(request.find("Host: ") + 6);
 
     if (port == HTTP_PORT) {
         hostname = doman.substr(0, doman.find('\n'));
         while (not IsCharAlpha(hostname.back())) hostname.pop_back();
-        // std::cerr << "HTTP request! ->" << hostname << '\n';
-
         if (hostname.empty()) {
             std::cerr << "Host not found in request." << std::endl;
             return false;
@@ -120,12 +116,9 @@ bool bindSocketToAdressPort(ADDRESS_FAMILY sin_family, u_long s_address, int por
 
 bool handleClient(SOCKET &clientSocket) {
     // Receive request from client
-    char buffer[9000];
-    int recvSize = recv(clientSocket, buffer, sizeof(buffer), 0);
-    if (recvSize == SOCKET_ERROR || recvSize == 0) {
-        std::cerr << "Error receiving request from client." << std::endl;
-        return false;
-    }
+    const int bufferSize = 9000;
+    char buffer[bufferSize + 1]; int recvSize = bufferSize;
+    if (not receiveMSG(clientSocket, buffer, recvSize)) return false;
 
     // Convert request to string and get the host name
     std::string request(buffer, recvSize);
@@ -152,14 +145,14 @@ bool handleClient(SOCKET &clientSocket) {
     }
 
     if (port == HTTPS_PORT) {
-        const char* connectResponse = "HTTP/1.1 200 Connection Established\r\n\r\n";
-        send(clientSocket, connectResponse, strlen(connectResponse), 0);
+        char connectResponse[] = "HTTP/1.1 200 Connection Established\r\n\r\n"; int len = strlen(connectResponse);
+        if (not sendMSG(clientSocket, connectResponse, len)) 
+            return false;
     }
 
     fd_set readfds;
     int step = 0;
     while (true) {
-        const int bufferSize = 4096;
         FD_ZERO(&readfds);
         FD_SET(clientSocket, &readfds);
         FD_SET(remoteSocket, &readfds);
@@ -168,19 +161,17 @@ bool handleClient(SOCKET &clientSocket) {
         if (activity <= 0) break;
         int cnt = 0;
         if (FD_ISSET(clientSocket, &readfds)) {
-            int bytesReceived = recv(clientSocket, buffer, bufferSize, 0);
-            if (bytesReceived <= 0) break;
+            int bytesReceived = bufferSize;
+            if (not receiveMSG(clientSocket, buffer, bytesReceived)) break;
             send(remoteSocket, buffer, bytesReceived, 0);
             cnt++;
         }
-
         if (FD_ISSET(remoteSocket, &readfds)) {
-            int bytesReceived = recv(remoteSocket, buffer, bufferSize, 0);
-            if (bytesReceived <= 0) break;
+            int bytesReceived = bufferSize;
+            if (not receiveMSG(remoteSocket, buffer, bytesReceived)) break;
             send(clientSocket, buffer, bytesReceived, 0);
             cnt++;
         }
-        // std::cerr << "RUNNING... " << ++step << " " << activity << " " << cnt << '\n';
     }
     return true;
 }
