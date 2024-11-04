@@ -4,8 +4,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData; 
-SOCKET localSocket, remoteSocket;
-
+SOCKET localSocket;
 
 bool getHostFromRequest(const std::string request, std::string &hostname, int &port) {
     port = (request.find("CONNECT") == 0 ? HTTPS_PORT : HTTP_PORT);
@@ -77,11 +76,12 @@ int runServerProxy() {
     std::cout << "Proxy is listening on port " << LOCAL_PORT << "..." << std::endl;
 
     while (true) {
-        if (handleClient() == false) 
-            std::cerr << "HAVE SOME PROBLEMS\n";
-        std::cerr << "END CLIENT!\n";
+        // if (handleClient() == false) 
+            // std::cerr << "HAVE SOME PROBLEMS\n";
+        // std::cerr << "END CLIENT!\n";
+        std::thread t(handleClient);
+        t.detach();
     }
-    closesocket(remoteSocket);
     closesocket(localSocket);
     WSACleanup();
     return 0;
@@ -101,7 +101,6 @@ bool isInitializedSocket(SOCKET &sock) {
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
         std::cerr << "Error creating socket." << std::endl;
-        closesocket(remoteSocket);
         closesocket(localSocket);
         WSACleanup();
         return false;
@@ -119,7 +118,6 @@ bool bindSocketToAdressPort(ADDRESS_FAMILY sin_family, u_long s_address, int por
     // Bind the listening socket to the address and port
     if (bind(localSocket, (sockaddr*)&localAddr, sizeof(localAddr)) == SOCKET_ERROR) {
         std::cerr << "ERROR binding socket!!!!" << std::endl;
-        closesocket(remoteSocket);
         closesocket(localSocket);
         WSACleanup();
         return false;
@@ -131,9 +129,6 @@ bool handleClient() {
     SOCKET clientSocket = accept(localSocket, nullptr, nullptr);
     if (clientSocket == INVALID_SOCKET) {
         std::cerr << "Error accepting connection from client." << std::endl;
-        closesocket(remoteSocket);
-        closesocket(localSocket);
-        WSACleanup();
         return false;
     }
     // Receive request from client
@@ -144,7 +139,7 @@ bool handleClient() {
 
     // Convert request to string and get the host name
     std::string request(buffer, recvSize);
-    std::cerr << "SIZE\n" << recvSize << "\n" << request << '\n';
+    // std::cerr << "SIZE\n" << recvSize << "\n" << request << '\n';
     std::string host; int port; getHostFromRequest(request, host, port);
     hostent* hostInfo = gethostbyname(host.c_str());
     // Resolve the host name to an IP address
@@ -152,7 +147,7 @@ bool handleClient() {
         std::cerr << "Failed to resolve host name." << std::endl;
         return false;
     }
-    
+    SOCKET remoteSocket;
     // Create a socket to connect to the remote server
     if (not isInitializedSocket(remoteSocket)) return EXISTS_ERORRS;
     // Set the remote server address
@@ -164,13 +159,18 @@ bool handleClient() {
     // Connect to the remote server
     if (connect(remoteSocket, (sockaddr*)&remoteAddr, sizeof(remoteAddr)) == SOCKET_ERROR) {
         std::cerr << "Error connecting to remote server." << std::endl;
+        closesocket(remoteSocket);
+        closesocket(clientSocket);
         return false;
     }
 
     if (port == HTTPS_PORT) {
         char connectResponse[] = "HTTP/1.1 200 Connection Established\r\n\r\n"; int len = strlen(connectResponse);
-        if (not sendMSG(clientSocket, connectResponse, len)) 
+        if (not sendMSG(clientSocket, connectResponse, len)) {
+            closesocket(remoteSocket);
+            closesocket(clientSocket);
             return false;
+        }
     }
 
     fd_set readfds;
@@ -180,22 +180,23 @@ bool handleClient() {
         FD_SET(clientSocket, &readfds);
         FD_SET(remoteSocket, &readfds);
         TIMEVAL delay; delay.tv_sec = 5; delay.tv_usec=0;
-        int activity = select(0, &readfds, nullptr, nullptr, (TIMEVAL*)&delay);
+        int activity = select(0, &readfds, nullptr, nullptr, nullptr);
         if (activity <= 0) break;
         int cnt = 0;
         if (FD_ISSET(clientSocket, &readfds)) {
             int bytesReceived = bufferSize;
             if (not receiveMSG(clientSocket, buffer, bytesReceived)) break;
-            send(remoteSocket, buffer, bytesReceived, 0);
+            if (not sendMSG(remoteSocket, buffer, bytesReceived)) break;
             cnt++;
         }
         if (FD_ISSET(remoteSocket, &readfds)) {
             int bytesReceived = bufferSize;
             if (not receiveMSG(remoteSocket, buffer, bytesReceived)) break;
-            send(clientSocket, buffer, bytesReceived, 0);
+            if (not sendMSG(clientSocket, buffer, bytesReceived)) break;
             cnt++;
         }
     }
+    closesocket(remoteSocket);
     closesocket(clientSocket);
     return true;
 }

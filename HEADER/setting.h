@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <thread>
+#include <vector>
 
 #define LOCAL_PORT 8080
 #define HTTPS_PORT 443
