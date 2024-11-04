@@ -5,6 +5,7 @@
 #include <winsock2.h>
 #include <string>
 #include <sstream>
+#include <thread>
 
 #define LOCAL_PORT 8080
 #define HTTPS_PORT 443

@@ -1,6 +1,5 @@
 #include "../HEADER/setting.h"
 
-
 bool receiveMSG(SOCKET socket, char *buffer, int &len) {
     int bytesReceived = recv(socket, buffer, len, 0);
 

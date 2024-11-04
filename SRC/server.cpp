@@ -38,7 +38,7 @@ bool getHostFromRequest(const std::string request, std::string &hostname, int &p
 bool isInitializedWinsock();
 bool isInitializedSocket(SOCKET &socket);
 bool bindSocketToAdressPort(ADDRESS_FAMILY, u_long, int);
-bool handleClient(SOCKET&);
+bool handleClient();
  
 int runServerProxy() {
     WSADATA wsaData; if (not isInitializedWinsock()) return EXISTS_ERORRS;
@@ -56,17 +56,9 @@ int runServerProxy() {
     std::cout << "Proxy is listening on port " << LOCAL_PORT << "..." << std::endl;
 
     while (true) {
-        SOCKET clientSocket = accept(localSocket, nullptr, nullptr);
-        if (clientSocket == INVALID_SOCKET) {
-            std::cerr << "Error accepting connection from client." << std::endl;
-            closesocket(remoteSocket);
-            closesocket(localSocket);
-            WSACleanup();
-            return false;
-        }
-        if (handleClient(clientSocket) == false) 
+        if (handleClient() == false) 
             std::cerr << "HAVE SOME PROBLEMS\n";
-        closesocket(clientSocket);
+        std::cerr << "END CLIENT!\n";
     }
     closesocket(remoteSocket);
     closesocket(localSocket);
@@ -114,7 +106,15 @@ bool bindSocketToAdressPort(ADDRESS_FAMILY sin_family, u_long s_address, int por
     return true;
 }
 
-bool handleClient(SOCKET &clientSocket) {
+bool handleClient() {
+    SOCKET clientSocket = accept(localSocket, nullptr, nullptr);
+    if (clientSocket == INVALID_SOCKET) {
+        std::cerr << "Error accepting connection from client." << std::endl;
+        closesocket(remoteSocket);
+        closesocket(localSocket);
+        WSACleanup();
+        return false;
+    }
     // Receive request from client
     const int bufferSize = 9000;
     char buffer[bufferSize + 1]; int recvSize = bufferSize;
@@ -123,6 +123,7 @@ bool handleClient(SOCKET &clientSocket) {
     // Convert request to string and get the host name
     std::string request(buffer, recvSize);
     std::string host; int port; getHostFromRequest(request, host, port);
+    std::cerr << host << " " << port << '\n';
     hostent* hostInfo = gethostbyname(host.c_str());
     // Resolve the host name to an IP address
     if (hostInfo == nullptr) {
@@ -173,5 +174,6 @@ bool handleClient(SOCKET &clientSocket) {
             cnt++;
         }
     }
+    closesocket(clientSocket);
     return true;
 }
