@@ -6,32 +6,53 @@
 WSADATA wsaData; 
 SOCKET localSocket, remoteSocket;
 
-// Function to parse and get the host name from the HTTP request
+
 bool getHostFromRequest(const std::string request, std::string &hostname, int &port) {
     port = (request.find("CONNECT") == 0 ? HTTPS_PORT : HTTP_PORT);
-    std::string doman = request.substr(request.find("Host: ") + 6);
+    size_t hostPos = request.find("Host: ");
+    if (hostPos == std::string::npos) {
+        std::cerr << "Host header not found in request." << std::endl;
+        return false;
+    }
+
+    std::string domain = request.substr(hostPos + 6);
+    size_t endPos = domain.find('\n');
+    if (endPos != std::string::npos) {
+        domain = domain.substr(0, endPos);
+    }
 
     if (port == HTTP_PORT) {
-        hostname = doman.substr(0, doman.find('\n'));
-        while (not IsCharAlpha(hostname.back())) hostname.pop_back();
+        hostname = domain;
+        while (!hostname.empty() && !std::isalpha(hostname.back())) {
+            hostname.pop_back();
+        }
         if (hostname.empty()) {
             std::cerr << "Host not found in request." << std::endl;
             return false;
-        }  
+        }
         return true;
-    } 
-
-    size_t colonPos = doman.find(':');  
-    if (colonPos != std::string::npos) {
-        hostname = doman.substr(0, colonPos);           // Lấy phần tên miền
-        port = std::stoi(doman.substr(colonPos + 1));   // Lấy phần cổng
-    } else {
-        hostname = doman;  // Nếu không có cổng, dùng tên miền như đã nhập
     }
+
+    size_t colonPos = domain.find(':');
+    if (colonPos != std::string::npos) {
+        hostname = domain.substr(0, colonPos);
+        try {
+            port = std::stoi(domain.substr(colonPos + 1));
+        } catch (const std::invalid_argument &e) {
+            std::cerr << "Invalid port number." << std::endl;
+            return false;
+        } catch (const std::out_of_range &e) {
+            std::cerr << "Port number out of range." << std::endl;
+            return false;
+        }
+    } else {
+        hostname = domain;
+    }
+
     if (hostname.empty()) {
         std::cerr << "Host not found in request." << std::endl;
-        return false; 
-    }  
+        return false;
+    }
     return true;
 }
 
@@ -116,14 +137,15 @@ bool handleClient() {
         return false;
     }
     // Receive request from client
-    const int bufferSize = 9000;
-    char buffer[bufferSize + 1]; int recvSize = bufferSize;
+    const int bufferSize = 32000;
+    char buffer[bufferSize]; int recvSize = bufferSize;
+    memset(buffer, 0, sizeof buffer);
     if (not receiveMSG(clientSocket, buffer, recvSize)) return false;
 
     // Convert request to string and get the host name
     std::string request(buffer, recvSize);
+    std::cerr << "SIZE\n" << recvSize << "\n" << request << '\n';
     std::string host; int port; getHostFromRequest(request, host, port);
-    std::cerr << host << " " << port << '\n';
     hostent* hostInfo = gethostbyname(host.c_str());
     // Resolve the host name to an IP address
     if (hostInfo == nullptr) {
@@ -157,7 +179,7 @@ bool handleClient() {
         FD_ZERO(&readfds);
         FD_SET(clientSocket, &readfds);
         FD_SET(remoteSocket, &readfds);
-        TIMEVAL delay; delay.tv_sec = 2; delay.tv_usec=0;
+        TIMEVAL delay; delay.tv_sec = 5; delay.tv_usec=0;
         int activity = select(0, &readfds, nullptr, nullptr, (TIMEVAL*)&delay);
         if (activity <= 0) break;
         int cnt = 0;
