@@ -7,9 +7,10 @@
 class ClientHandler {
 private:
     SOCKET clientSocket;
+    SOCKET remoteSocket;
     // Request request;
     // Response response:
-    bool connectToServer();
+    SOCKET connectToServer();
 public:
     ClientHandler(SOCKET sock);
     ~ClientHandler();

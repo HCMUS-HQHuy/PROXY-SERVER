@@ -3,54 +3,18 @@
 
 ClientHandler::ClientHandler(SOCKET sock) {
     clientSocket = sock;
+    remoteSocket = connectToServer();
 }
 
 ClientHandler::~ClientHandler() {
     closesocket(clientSocket);
+    closesocket(remoteSocket);
 }
 
 void ClientHandler::handleRequest() {
-    Message message; message.receiveMessage(clientSocket);
-    string host; int port; 
-    message.getHostFromRequest(host, port);
-    hostent* hostInfo = gethostbyname(host.c_str());
-    message.print();
-    std::cerr << host << " " << port <<'\n';
-    if (hostInfo == nullptr) {
-        std::cerr << "Failed to resolve host name." << std::endl;
-        return;
-    }
-    
-    // Create a socket to listen for client connections
-    SOCKET remoteSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (remoteSocket == INVALID_SOCKET) {
-        std::cerr << "Error creating socket." << std::endl;
-        return;
-    }
-
-    // Set the remote server address
-    sockaddr_in remoteAddr;
-    remoteAddr.sin_family = AF_INET;
-    remoteAddr.sin_port = htons(port); 
-    remoteAddr.sin_addr.s_addr = *((unsigned long*)hostInfo->h_addr_list[0]);
-
-    // Connect to the remote server
-    if (connect(remoteSocket, (sockaddr*)&remoteAddr, sizeof(remoteAddr)) == SOCKET_ERROR) {
-        std::cerr << "Error connecting to remote server." << std::endl;
-        closesocket(remoteSocket);
-        return;
-    }
-
-    if (port == HTTPS_PORT) {
-        Message connectMessage("HTTP/1.1 200 Connection Established\r\n\r\n");
-        if (connectMessage.sendMessage(clientSocket) == SOCKET_ERROR) {
-            closesocket(remoteSocket);
-            return;
-        }
-    }
-
+    if (remoteSocket == SOCKET_ERROR) return;
     fd_set readfds;
-    int step = 0;
+    // int step = 0;
     while (true) {
         FD_ZERO(&readfds);
         FD_SET(clientSocket, &readfds);
@@ -70,8 +34,48 @@ void ClientHandler::handleRequest() {
             if (byteReceive <= 0) break;
             if (response.sendMessage(clientSocket, byteReceive) <= 0) break;
         }
-        std::cerr << ++step << "\n";
+        // std::cerr << ++step << "\n";
     }
-    closesocket(remoteSocket);
 }
 
+SOCKET ClientHandler::connectToServer() {
+    Message message; message.receiveMessage(clientSocket);
+    string host; int port; 
+    message.getHostFromRequest(host, port);
+    hostent* hostInfo = gethostbyname(host.c_str());
+    // message.print();
+    std::cerr << host << " " << port <<'\n';
+    if (hostInfo == nullptr) {
+        std::cerr << "Failed to resolve host name." << std::endl;
+        return SOCKET_ERROR;
+    }
+    
+    // Create a socket to listen for client connections
+    SOCKET remoteSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (remoteSocket == INVALID_SOCKET) {
+        std::cerr << "Error creating socket." << std::endl;
+        return SOCKET_ERROR;
+    }
+
+    // Set the remote server address
+    sockaddr_in remoteAddr;
+    remoteAddr.sin_family = AF_INET;
+    remoteAddr.sin_port = htons(port); 
+    remoteAddr.sin_addr.s_addr = *((unsigned long*)hostInfo->h_addr_list[0]);
+
+    // Connect to the remote server
+    if (connect(remoteSocket, (sockaddr*)&remoteAddr, sizeof(remoteAddr)) == SOCKET_ERROR) {
+        std::cerr << "Error connecting to remote server." << std::endl;
+        closesocket(remoteSocket);
+        return SOCKET_ERROR;
+    }
+
+    if (port == HTTPS_PORT) {
+        Message connectMessage("HTTP/1.1 200 Connection Established\r\n\r\n");
+        if (connectMessage.sendMessage(clientSocket) == SOCKET_ERROR) {
+            closesocket(remoteSocket);
+            return SOCKET_ERROR;
+        }
+    }
+    return remoteSocket;
+}
