@@ -1,8 +1,9 @@
-#include "../HEADER/setting.h"
-#include "../HEADER/supportFunction.h"
-#include "../HEADER/server.h"
+#include "./../HEADER/Setting.h"
+#include "./../HEADER/ProxyServer.h"
 
 int main() {
-    runServerProxy();
+    ProxyServer proxyServer(LOCAL_PORT);
+    proxyServer.start();
+    proxyServer.stop();
     return 0;
 }

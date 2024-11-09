@@ -36,47 +36,54 @@
 After run `select` a while, the readfds will remove sockets that are not activated. 
 
 
+## SOME NOTES:
+* 10053 ERRORs with clientSocket: it is errors when client sends a short message without waiting responding. So if select wait for a long time. This may occur error closed server from browser.
+
 # IMPROVEMENT. (WAITING ...)
-ProxyServer Class: Manages the overall functionality of the proxy server, including handling client requests and forwarding them to the destination server.
-Attributes:
-	host: Proxy server host (IP address).
-	port: Listening port for client connections.
-	cache: Instance of Cache (optional).
-	logger: Instance of Logger (optional).
-Methods:
-	start(): Starts the server and listens for incoming connections.
-	accept_client(): Accepts a new client connection and spawns a ClientHandler.
-	stop(): Stops the server gracefully.
+## ProxyServer Class: 
+Manages the overall functionality of the proxy server, including handling client requests and forwarding them to the destination server. \
+### Attributes:
+	* host: Proxy server host (IP address).
+	* port: Listening port for client connections.
+	* cache: Instance of Cache (optional).
+	* logger: Instance of Logger (optional).
+### Methods:
+	* start(): Starts the server and listens for incoming connections.
+	* accept_client(): Accepts a new client connection and spawns a ClientHandler.
+	* stop(): Stops the server gracefully.
 
-ClientHandler Class: Handles individual client connections, processes requests, and manages communication between the client and the proxy server.
-Attributes:
-	client_socket: Socket representing the client connection.
-	request: Instance of Request.
-	response: Instance of Response.
-	proxy_server: Reference to the ProxyServer.
-Methods:
-	handle_request(): Reads data from the client, processes it, and sends it to the destination server.
-	forward_request(): Forwards the processed request to the actual server.
-	send_response(): Sends the response back to the client after processing.
+## ClientHandler Class: 
+Handles individual client connections, processes requests, and manages communication between the client and the proxy server.
+### Attributes:
+	* client_socket: Socket representing the client connection.
+	* request: Instance of Request.
+	* response: Instance of Response.
+	* proxy_server: Reference to the ProxyServer.
+### Methods:
+	* handle_request(): Reads data from the client, processes it, and sends it to the destination server.
+	* forward_request(): Forwards the processed request to the actual server.
+	* send_response(): Sends the response back to the client after processing.
 
-Request Class: Represents a client request. This class parses and stores request details (such as headers, request type, and URL) and might provide utility functions for modification.
-Attributes:
-	method: HTTP method (GET, POST, etc.).
-	url: Target URL.
-	headers: Request headers.
-	body: Request body (for POST requests).
-Methods:
-	parse(): Parses raw request data from the client.
-	modify_request(): Modifies headers or body if needed (e.g., for adding headers).
+## Request Class: 
+Represents a client request. This class parses and stores request details (such as headers, request type, and URL) and might provide utility functions for modification.
+### Attributes:
+	* method: HTTP method (GET, POST, etc.).
+	* url: Target URL.
+	* headers: Request headers.
+	* body: Request body (for POST requests).
+### Methods:
+	* parse(): Parses raw request data from the client.
+	* modify_request(): Modifies headers or body if needed (e.g., for adding headers).
 
-Response Class: Represents the response from the destination server, including methods for reading, storing, and modifying response data as needed.
-Attributes:
-	status_code: HTTP status code (e.g., 200, 404).
-	headers: Response headers.
-	body: Response body (HTML, JSON, etc.).
-Methods:
-	parse(): Parses raw response data from the destination server.
-	modify_response(): Modifies headers or body if needed.
+## Response Class: 
+Represents the response from the destination server, including methods for reading, storing, and modifying response data as needed.
+### Attributes:
+	* status_code: HTTP status code (e.g., 200, 404).
+	* headers: Response headers.
+	* body: Response body (HTML, JSON, etc.).
+### Methods:
+	* parse(): Parses raw response data from the destination server.
+	* modify_response(): Modifies headers or body if needed.
 
 
 Cache Class (Optional):Stores responses for certain requests to improve performance by serving cached data instead of forwarding every request.
@@ -92,6 +99,8 @@ Attributes:
 	log_file: Path to the log file.
 Methods:
 	log(message): Writes messages to a log file.
+
+??? How to block ads when access a website.
 
 
 
