@@ -13,28 +13,54 @@ ClientHandler::~ClientHandler() {
 
 void ClientHandler::handleRequest() {
     if (remoteSocket == SOCKET_ERROR) return;
-    fd_set readfds;
-    // int step = 0;
+
+    struct pollfd fds[2];
+    
+    fds[0].fd = clientSocket;
+    fds[0].events = POLLIN;  // Sẵn sàng đọc từ client
+
+    fds[1].fd = remoteSocket;
+    fds[1].events = POLLIN;  // Sẵn sàng đọc từ server
+
+    #define TIMEOUT 2000  // Thời gian chờ cho WSAPoll
+    #define BUFFER_SIZE 1024
+    char buffer[BUFFER_SIZE];
+    int reconnect = 0;
     while (true) {
-        FD_ZERO(&readfds);
-        FD_SET(clientSocket, &readfds);
-        FD_SET(remoteSocket, &readfds);
-        TIMEVAL delay; delay.tv_sec = 5; delay.tv_usec=0;
-        int activity = select(0, &readfds, nullptr, nullptr, &delay);
-        if (activity <= 0) break;
-        if (FD_ISSET(clientSocket, &readfds)) {
-            Message request; 
-            int byteReceive = request.receiveMessage(clientSocket);
-            if (byteReceive <= 0) break;
-            if (request.sendMessage(remoteSocket, byteReceive) <= 0) break;
+        // Kiểm tra trạng thái của các socket
+        int ret = WSAPoll(fds, 2, TIMEOUT);
+
+        if (ret < 0) {
+            std::cerr << "WSAPoll ERROR!\n";
+            break;
+        } else if (ret == 0) {
+            std::cerr << "Timeout!! " << reconnect << '\n';
+            if (++reconnect > 4) break;
+            continue;
         }
-        if (FD_ISSET(remoteSocket, &readfds)) {
-            Message response;
-            int byteReceive = response.receiveMessage(remoteSocket);
-            if (byteReceive <= 0) break;
-            if (response.sendMessage(clientSocket, byteReceive) <= 0) break;
+        reconnect = 0;
+        for (int t = 0; t < 2; ++t) {
+            if (fds[t].revents & (POLLHUP | POLLERR | POLLNVAL)) {
+                std::cerr << "Socket from " << (t == 0 ? "client" : "server") << " closed.\n";
+                return;  // Thoát khi có lỗi hoặc socket đóng
+            }
         }
-        // std::cerr << ++step << "\n";
+        if (fds[0].revents & POLLIN) {
+            int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
+            if (bytesReceived <= 0) {
+                std::cerr << "Client closed connection.\n";
+                break;
+            }
+            send(remoteSocket, buffer, bytesReceived, 0);
+        }
+        if (fds[1].revents & POLLIN) {
+            int bytesReceived = recv(remoteSocket, buffer, BUFFER_SIZE, 0);
+            if (bytesReceived <= 0) {
+                std::cerr << "Server closed connection.\n";
+                break;
+            }
+            send(clientSocket, buffer, bytesReceived, 0);
+        }
     }
 }
 

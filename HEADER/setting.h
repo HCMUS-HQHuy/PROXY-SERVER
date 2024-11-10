@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
+#include <thread>
 
 using std::string;
 
