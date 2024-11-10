@@ -12,7 +12,7 @@ ClientHandler::~ClientHandler() {
 }
 
 void ClientHandler::handleRequest() {
-    if (remoteSocket == SOCKET_ERROR) return;
+    if (remoteSocket == (SOCKET)SOCKET_ERROR) return;
 
     struct pollfd fds[2];
     
