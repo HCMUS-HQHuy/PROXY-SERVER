@@ -1,5 +1,5 @@
 #include "./../../HEADER/ClientHandler.h"
-
+#include <chrono>
 
 ClientHandler::ClientHandler(SOCKET sock) {
     clientSocket = sock;
@@ -17,34 +17,45 @@ void ClientHandler::handleRequest() {
     struct pollfd fds[2];
     
     fds[0].fd = clientSocket;
-    fds[0].events = POLLIN;  // Sẵn sàng đọc từ client
+    fds[0].events = POLLIN;  
 
     fds[1].fd = remoteSocket;
-    fds[1].events = POLLIN;  // Sẵn sàng đọc từ server
+    fds[1].events = POLLIN;  
 
-    #define TIMEOUT 2000  // Thời gian chờ cho WSAPoll
+    #define TIMEOUT 1000 
     #define BUFFER_SIZE 1024
+    #define MAX_IDLE_TIME 5000
     char buffer[BUFFER_SIZE];
-    int reconnect = 0;
+    auto lastActivity = std::chrono::steady_clock::now();
     while (true) {
-        // Kiểm tra trạng thái của các socket
         int ret = WSAPoll(fds, 2, TIMEOUT);
 
         if (ret < 0) {
             std::cerr << "WSAPoll ERROR!\n";
             break;
         } else if (ret == 0) {
-            std::cerr << "Timeout!! " << reconnect << '\n';
-            if (++reconnect > 4) break;
+            // Kiểm tra idle timeout
+            const auto& currentTime = std::chrono::steady_clock::now();
+            const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count();
+            if (idleDuration > MAX_IDLE_TIME) {
+                std::cerr << "Idle timeout reached. Closing connection.\n";
+                break;
+            }
+            std::cerr << "Timeout - no data activity\n";
             continue;
         }
-        reconnect = 0;
+
+        // Reset reconnect khi có hoạt động
+        lastActivity = std::chrono::steady_clock::now();
+
+        // Kiểm tra lỗi hoặc ngắt kết nối cho cả hai socket
         for (int t = 0; t < 2; ++t) {
             if (fds[t].revents & (POLLHUP | POLLERR | POLLNVAL)) {
                 std::cerr << "Socket from " << (t == 0 ? "client" : "server") << " closed.\n";
-                return;  // Thoát khi có lỗi hoặc socket đóng
+                return;
             }
         }
+
         if (fds[0].revents & POLLIN) {
             int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
             if (bytesReceived <= 0) {
@@ -69,13 +80,11 @@ SOCKET ClientHandler::connectToServer() {
     string host; int port; 
     message.getHostFromRequest(host, port);
     hostent* hostInfo = gethostbyname(host.c_str());
-    // message.print();
     std::cerr << host << " " << port <<'\n';
     if (hostInfo == nullptr) {
         std::cerr << "Failed to resolve host name." << std::endl;
         return SOCKET_ERROR;
     }
-    
     // Create a socket to listen for client connections
     SOCKET remoteSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (remoteSocket == INVALID_SOCKET) {
