@@ -3,3 +3,5 @@ TEST.cpp
 BIN
 .vscode
 
+THREAD
+Thread*

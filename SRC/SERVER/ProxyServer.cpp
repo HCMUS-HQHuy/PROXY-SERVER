@@ -1,5 +1,6 @@
 #include "./../../HEADER/ProxyServer.h"
 #include "./../../HEADER/ClientHandler.h"
+#include <thread>
 #include <bits/shared_ptr.h>
 
 ProxyServer::ProxyServer(int p) {

@@ -2,6 +2,8 @@
 #include <chrono>
 
 ClientHandler::ClientHandler(SOCKET sock) {
+    // activeThreads++;
+    // std::cout << "Thread started. Active threads: " << activeThreads.load() << std::endl;
     clientSocket = sock;
     remoteSocket = connectToServer();
 }
@@ -9,11 +11,12 @@ ClientHandler::ClientHandler(SOCKET sock) {
 ClientHandler::~ClientHandler() {
     closesocket(clientSocket);
     closesocket(remoteSocket);
+    // activeThreads--;
+    // std::cout << "Thread finished. Active threads: " << activeThreads.load() << std::endl;
 }
 
 void ClientHandler::handleRequest() {
     if (remoteSocket == (SOCKET)SOCKET_ERROR) return;
-
     struct pollfd fds[2];
     
     fds[0].fd = clientSocket;

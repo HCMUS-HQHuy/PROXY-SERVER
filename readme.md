@@ -38,6 +38,10 @@ After run `select` a while, the readfds will remove sockets that are not activat
 
 ## SOME NOTES:
 * 10053 ERRORs with clientSocket: it is errors when client sends a short message without waiting responding. So if select wait for a long time. This may occur error closed server from browser.
+### Vấn đề hiện tại: 
+* Việc giữ CONNECT cho một trang web là tốt hay xấu? Nếu nhiều tab được browser mở lên mà mỗi tab điều là nội dung của trang web youtube.com thì nó có được gửi lại lệnh CONNECT cho mỗi tab không? 
+* Làm thế nào để ngắt PROXY hiệu quả?
+* Tối ưu lệnh connect cho mỗi client.
 
 # IMPROVEMENT. (WAITING ...)
 ## ProxyServer Class: 
