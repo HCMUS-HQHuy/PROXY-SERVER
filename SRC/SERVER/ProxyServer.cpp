@@ -26,9 +26,7 @@ void ProxyServer::start() {
     while (true) {
         SOCKET client = acceptClient();
         if (client != INVALID_SOCKET) {
-            auto handler = std::make_shared<ClientHandler>(client);  
-            std::thread clientThread(&ClientHandler::handleRequest, handler);
-            clientThread.detach();
+            requestHandlerPool.enqueue(std::make_shared<ClientHandler>(client));
         }
     }
 
