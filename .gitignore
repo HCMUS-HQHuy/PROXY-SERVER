@@ -1,4 +1,5 @@
-*.cpp
+TEST.cpp
 *.exe
 BIN
 .vscode
+

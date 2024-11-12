@@ -2,17 +2,15 @@
 #define SETTING_H
 
 #include <iostream>
-#include <string>
 #include <winsock2.h>
-#include <windows.h>
-#include <ws2tcpip.h>
-#include <iphlpapi.h>
+#include <string>
+#include <sstream>
 #include <thread>
+#include <vector>
 
-using std::string;
-
+#define LOCAL_PORT 8080
 #define HTTPS_PORT 443
 #define HTTP_PORT 80
-#define LOCAL_PORT 8080
+#define EXISTS_ERORRS -1
 
 #endif
