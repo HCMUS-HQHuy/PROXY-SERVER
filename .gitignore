@@ -2,6 +2,3 @@ TEST.cpp
 *.exe
 BIN
 .vscode
-
-THREAD
-Thread*
