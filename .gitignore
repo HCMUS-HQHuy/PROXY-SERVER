@@ -2,7 +2,4 @@ TEST.cpp
 *.exe
 BIN
 .vscode
-CERTIFICATE/
-DEMO_READING_HTTPS.cpp
-HTTPS.md
 
