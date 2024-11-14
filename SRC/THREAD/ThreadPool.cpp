@@ -1,11 +1,12 @@
 #include "./../../HEADER/ThreadPool.h"
 
+ThreadPool requestHandlerPool(std::thread::hardware_concurrency() * 50);
 // Khởi tạo pool với số luồng cố định
 ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
     for (size_t i = 0; i < numThreads; ++i) {
         workers.emplace_back([this] {
             while (true) {
-                std::function<void()> task;
+                std::shared_ptr<ClientHandler> task;
                 {
                     std::unique_lock<std::mutex> lock(this->queueMutex);
                     this->condition.wait(lock, [this] { return this->stop || !this->tasks.empty(); });
@@ -13,18 +14,17 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                     task = std::move(this->tasks.front());
                     this->tasks.pop();
                 }
-                task();
+                task->handleRequest();
             }
         });
     }
 }
 
 // Đưa task vào hàng đợi
-template <class F>
-void ThreadPool::enqueue(F&& f) {
+void ThreadPool::enqueue(std::shared_ptr<ClientHandler>&& p) {
     {
         std::unique_lock<std::mutex> lock(queueMutex);
-        tasks.emplace(std::forward<F>(f));
+        tasks.emplace(std::forward<std::shared_ptr<ClientHandler>>(p));
     }
     condition.notify_one();
 }

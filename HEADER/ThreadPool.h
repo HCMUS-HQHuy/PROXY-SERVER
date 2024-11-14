@@ -3,25 +3,27 @@
 
 #include <iostream>
 #include <thread>
-#include <atomic>
 #include <queue>
 #include <vector>
-#include <functional>
 #include <condition_variable>
-#include <future>
+#include <bits/shared_ptr.h>
+#include "ClientHandler.h"
 
 class ThreadPool {
 private:
     std::vector<std::thread> workers;
-    std::queue<std::function<void()>> tasks;
+    std::queue<std::shared_ptr<ClientHandler>> tasks;
     std::mutex queueMutex;
     std::condition_variable condition;
     bool stop;
 public:
     ThreadPool(size_t numThreads);
     ~ThreadPool();
-    template <class F> void enqueue(F&& f);
+    void enqueue(std::shared_ptr<ClientHandler>&& p);
 };
+
+
+extern ThreadPool requestHandlerPool;
 
 
 #endif 

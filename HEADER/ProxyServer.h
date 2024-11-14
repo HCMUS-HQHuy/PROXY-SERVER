@@ -3,6 +3,7 @@
 
 #include "./Setting.h"
 #include "./NetworkManager.h"
+#include "ThreadPool.h"
 
 class ProxyServer : public NetworkManager{
 private:
