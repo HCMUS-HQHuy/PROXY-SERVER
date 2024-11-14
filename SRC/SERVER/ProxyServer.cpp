@@ -19,19 +19,19 @@ ProxyServer::ProxyServer(int p) {
 
 void ProxyServer::start() {
     waitingClient();
-    // while (true) {
-    //     SOCKET client = acceptClient();
-    //     ClientHandler handler(client);
-    //     handler.handleRequest();
-    // } 
     while (true) {
         SOCKET client = acceptClient();
-        if (client != INVALID_SOCKET) {
-            auto handler = std::make_shared<ClientHandler>(client);  
-            std::thread clientThread(&ClientHandler::handleRequest, handler);
-            clientThread.detach();
-        }
-    }
+        ClientHandler handler(client);
+        handler.handleRequest();
+    } 
+    // while (true) {
+    //     SOCKET client = acceptClient();
+    //     if (client != INVALID_SOCKET) {
+    //         auto handler = std::make_shared<ClientHandler>(client);  
+    //         std::thread clientThread(&ClientHandler::handleRequest, handler);
+    //         clientThread.detach();
+    //     }
+    // }
 
 }
 
@@ -43,7 +43,7 @@ void ProxyServer::waitingClient() {
         std::cerr << "Listen failed: " << WSAGetLastError() << std::endl;
         return;
     }
-    std::cerr << "Server is listenning on IPv4: " << IPv4 << "/" <<  port << "...\n";
+    std::cerr << "Server is listenning on IPv4: " << IPv4 << " PORT: " <<  port << "...\n";
 }
 
 SOCKET ProxyServer::acceptClient() {

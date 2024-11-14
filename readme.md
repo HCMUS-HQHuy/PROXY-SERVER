@@ -1,3 +1,6 @@
+# REQUIREMENT:
+> Install: https://slproweb.com/products/Win32OpenSSL.html
+
 # Important variables in code:
 
 ## localSocket:
