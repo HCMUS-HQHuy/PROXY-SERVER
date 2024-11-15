@@ -23,7 +23,7 @@ There are two huge problems:
 + Secondly, how to send request to server (real server) through out HTTPS protocols.
 
 We will use OPENSSL to solve these problems.
-OK! Now, let's get it! 
+OK! Now, let get it! 
 ## First huge problem:
 **Solution:** We will make browser trust our own proxy server as a real server so that it can send to us through SSL and we get HTTP request (decripted request)
 ## Second huse problme:
