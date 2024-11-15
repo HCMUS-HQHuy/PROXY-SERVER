@@ -80,7 +80,8 @@ They will require you some information:
     openssl req -new -key wikipedia.key -out wikipedia.csr -config wikipedia_openssl.cnf
     openssl x509 -req -in wikipedia.csr -CA root.crt -CAkey root.key -CAcreateserial -out wikipedia.crt -days 365 -sha256 -extfile wikipedia_openssl.cnf -extensions req_ext
 
-
+### RUN COMMAND
+    g++ .\DEMO_READING_HTTPS.cpp -lws2_32 -I"C:/Program Files/OpenSSL-Win64/include" -L"C:\Program Files\OpenSSL-Win64\lib\VC\x64\MT" -lssl -lcrypto -fpermissive
 
 # How to setup a HTTPS connection between client and server - ĐỌC THÊM
 
