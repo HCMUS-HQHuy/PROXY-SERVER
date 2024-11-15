@@ -9,6 +9,7 @@
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
+#include <string>
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "libssl.lib")
@@ -228,12 +229,10 @@ SSL* connectToTargetServer(const std::string& host, int port) {
         return nullptr;
     }
 
-    SSL* serverSSL = SSL_new(ctx);
-    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (serverSocket == INVALID_SOCKET) {
         std::cerr << "Socket creation failed.\n";
-        SSL_free(serverSSL);
         SSL_CTX_free(ctx); // Đảm bảo giải phóng ctx khi gặp lỗi
         return nullptr;
     }
@@ -247,9 +246,11 @@ SSL* connectToTargetServer(const std::string& host, int port) {
     if (connect(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
         std::cerr << "CANNOT connect to server.\n";
         closesocket(serverSocket);
-        SSL_free(serverSSL);
         return nullptr;
     }
+    std::cerr << "CONNECTED SERVER: " << host << " " << port << '\n';
+
+    SSL* serverSSL = SSL_new(ctx);
     SSL_set_fd(serverSSL, serverSocket);
 
     if (SSL_connect(serverSSL) <= 0) {
@@ -261,7 +262,7 @@ SSL* connectToTargetServer(const std::string& host, int port) {
         SSL_CTX_free(ctx);
         return nullptr;
     }
-
+    
     return serverSSL;
 }
 
@@ -279,6 +280,12 @@ void HTTPSHandler(SOCKET clientSocket, char* buffer, int bytesReceived) {
     SSL* clientSSL = SSL_new(clientCtx);
     SSL_set_fd(clientSSL, clientSocket);
 
+    if (SSL_get_verify_result(clientSSL) != X509_V_OK) {
+        std::cerr << "SSL certificate verification failed\n";
+        return;
+    }
+
+
     if (SSL_accept(clientSSL) <= 0) {
         std::cerr << "CANNOT ACCEPT clientSSL\n";
         ERR_print_errors_fp(stderr);
@@ -288,7 +295,6 @@ void HTTPSHandler(SOCKET clientSocket, char* buffer, int bytesReceived) {
         return;
     }
 
-    std::cout << "SSL connection established with client." << std::endl;
 
     // Kết nối đến server thực qua HTTPS
     SSL* serverSSL = connectToTargetServer(host, port);
@@ -301,6 +307,7 @@ void HTTPSHandler(SOCKET clientSocket, char* buffer, int bytesReceived) {
         return;
     }
 
+    std::cout << "SSL connection established with client." << std::endl;
     relayData(clientSSL, serverSSL);
 
     SSL_shutdown(clientSSL);
@@ -308,7 +315,52 @@ void HTTPSHandler(SOCKET clientSocket, char* buffer, int bytesReceived) {
     closesocket(clientSocket);
 }
 
+std::string processHTTPRequest(const std::string& request) {
+    std::stringstream input(request);
+    std::stringstream output;
+
+    std::string line;
+    bool isFirstLine = true;
+
+    while (std::getline(input, line) && !line.empty()) {
+        if (line.back() == '\r') line.pop_back();
+
+        if (isFirstLine) {
+            // Dòng đầu tiên (method và URL)
+            std::string method, url, version;
+            std::istringstream firstLine(line);
+            firstLine >> method >> url >> version;
+
+            if (url.find("http://") == 0 || url.find("https://") == 0) {
+                size_t pathStart = url.find('/', url.find("//") + 2);
+                url = (pathStart != std::string::npos) ? url.substr(pathStart) : "/";
+            }
+
+            output << method << " " << url << " " << version << "\r\n";
+            isFirstLine = false;
+        } else if (line.find("Proxy-Connection:") == 0) {
+            // Bỏ Proxy-Connection
+            continue;
+        } else if (line.find("Connection:") == 0) {
+            output << "Connection: close\r\n";
+        } else if (line.find("Accept-Encoding:") == 0) {
+            output << "Accept-Encoding: gzip\r\n";
+        } else if (line.find("Sec-F") == 0 || line.find("Upgrade-Insecure-Requests:") == 0) {
+            continue;
+        } else {
+            output << line << "\r\n";
+        }
+    }
+
+    // Thêm dòng trống cuối header
+    output << "\r\n";
+
+    return output.str();
+}
+
+
 void relayData(SSL* clientSSL, SSL* serverSSL) {
+    std::cerr << "HELLO\n\n\n";
     fd_set readfds;
     const int bufferSize = 512;
     char buffer[bufferSize];
@@ -325,19 +377,17 @@ void relayData(SSL* clientSSL, SSL* serverSSL) {
         TIMEVAL timeout;
         timeout.tv_sec = 2;
         timeout.tv_usec = 0;
-
-        int maxFd = std::max(clientFd, serverFd) + 1;
+        int maxFd = std::max(clientFd, serverFd) + 1; // Lấy giá trị lớn nhất của các file descriptors
         int activity = select(maxFd, &readfds, nullptr, nullptr, &timeout);
 
         if (activity == -1) {
-            std::cerr << "Error in select(). Exiting...\n";
+            int errorCode = WSAGetLastError();
+            std::cerr << "Error in select(): " << errorCode << ". Exiting...\n";
             break;
         }
         if (activity == 0) {
-            // Timeout, loop back to check for more activity
-            continue;
+            break;
         }
-        std::cerr << "STEP \n";
         // Xử lý dữ liệu từ client đến server
         if (FD_ISSET(clientFd, &readfds)) {
             std::cerr << "IN CLIENT\n";
@@ -348,13 +398,15 @@ void relayData(SSL* clientSSL, SSL* serverSSL) {
             }
             std::cerr << "Data from client: \n" << std::string(buffer, bytesReceived) << '\n';
 
-            int bytesSent = SSL_write(serverSSL, buffer, bytesReceived);
+            std::string tmp = std::string(buffer, bytesReceived);
+            tmp = processHTTPRequest(tmp);
+            std::cerr << tmp << '\n';
+            int bytesSent = SSL_write(serverSSL, tmp.c_str(), tmp.size());
             if (bytesSent <= 0) {
                 std::cerr << "Error writing to server.\n";
                 break;
             }
         }
-        std::cerr << "STEP \n";
 
         // Xử lý dữ liệu từ server đến client
         if (FD_ISSET(serverFd, &readfds)) {
@@ -372,6 +424,5 @@ void relayData(SSL* clientSSL, SSL* serverSSL) {
                 break;
             }
         }
-        std::cerr << "STEP \n";
     }
 }
