@@ -1,5 +1,6 @@
 TEST.cpp
 *.exe
 BIN
+CERTIFICATE
 .vscode
 tmp.cpp

@@ -6,6 +6,7 @@
 #include <openssl/applink.c>
 #include <string>
 #include <sstream>
+#include <unordered_map>
 #include <vector>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
@@ -453,47 +454,71 @@ void HTTPSHandler(SOCKET clientSocket, char* buffer, int bytesReceived) {
     closesocket(remoteSocket);
 }
 
-std::string processHTTPRequest(const std::string& request) {
-    std::stringstream input(request);
-    std::stringstream output;
-
+// Hàm tách request thành các dòng
+std::vector<std::string> splitLines(const std::string& request) {
+    std::vector<std::string> lines;
+    std::istringstream stream(request);
     std::string line;
-    bool isFirstLine = true;
+    while (std::getline(stream, line)) {
+        // Loại bỏ ký tự xuống dòng cuối cùng nếu có
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        lines.push_back(line);
+    }
+    return lines;
+}
 
-    while (std::getline(input, line) && !line.empty()) {
-        if (line.back() == '\r') line.pop_back();
+// Hàm sửa đổi HTTP request
+std::string modifyHTTPRequest(const std::string& request) {
+    auto lines = splitLines(request);
 
-        if (isFirstLine) {
-            // Dòng đầu tiên (method và URL)
-            std::string method, url, version;
-            std::istringstream firstLine(line);
-            firstLine >> method >> url >> version;
+    // Kiểm tra request có hợp lệ
+    if (lines.empty() || lines[0].find("GET") != 0 && lines[0].find("POST") != 0 &&
+        lines[0].find("PUT") != 0 && lines[0].find("DELETE") != 0) {
+        std::cerr << "Invalid HTTP request format.\n";
+        return "";
+    }
 
-            if (url.find("http://") == 0 || url.find("https://") == 0) {
-                size_t pathStart = url.find('/', url.find("//") + 2);
-                url = (pathStart != std::string::npos) ? url.substr(pathStart) : "/";
-            }
+    // Request line: "GET /path HTTP/1.1"
+    std::string requestLine = lines[0];
+    std::unordered_map<std::string, std::string> headers;
+    std::string body;
+    bool isBody = false;
 
-            output << method << " " << url << " " << version << "\r\n";
-            isFirstLine = false;
-        } else if (line.find("Proxy-Connection:") == 0) {
-            // Bỏ Proxy-Connection
+    // Tách headers và body
+    for (size_t i = 1; i < lines.size(); ++i) {
+        const std::string& line = lines[i];
+        if (line.empty()) {
+            isBody = true;
             continue;
-        } else if (line.find("Connection:") == 0) {
-            output << "Connection: close\r\n";
-        } else if (line.find("Accept-Encoding:") == 0) {
-            output << "Accept-Encoding: gzip\r\n";
-        } else if (line.find("Sec-F") == 0 || line.find("Upgrade-Insecure-Requests:") == 0) {
-            continue;
+        }
+        if (isBody) {
+            body += line + "\r\n";
         } else {
-            output << line << "\r\n";
+            size_t colonPos = line.find(':');
+            if (colonPos != std::string::npos) {
+                std::string key = line.substr(0, colonPos);
+                std::string value = line.substr(colonPos + 1);
+                while (!value.empty() && value.front() == ' ') value.erase(value.begin());
+                headers[key] = value;
+            }
         }
     }
 
-    // Thêm dòng trống cuối header
-    output << "\r\n";
+    // Bắt buộc chỉnh sửa một số headers
+    headers["Connection"] = "close"; // Đóng kết nối sau request
+    headers["Accept-Encoding"] = "gzip, deflate"; // Chỉ hỗ trợ định dạng nén đơn giản
+    headers.erase("Proxy-Connection"); // Xóa nếu có Proxy-Connection (không cần thiết cho server)
 
-    return output.str();
+    // Build lại request
+    std::ostringstream modifiedRequest;
+    modifiedRequest << requestLine << "\r\n";
+    for (const auto& header : headers) {
+        modifiedRequest << header.first << ": " << header.second << "\r\n";
+    }
+    modifiedRequest << "\r\n"; // Dòng trống phân cách header và body
+    modifiedRequest << body;
+
+    return modifiedRequest.str();
 }
 
 
@@ -534,10 +559,10 @@ void relayData(SSL* clientSSL, SSL* serverSSL) {
                 std::cerr << "Client disconnected or error reading from client.\n";
                 break;
             }
-            std::cerr << "Data from client: \n" << std::string(buffer, bytesReceived) << '\n';
+            // std::cerr << "Data from client: \n" << std::string(buffer, bytesReceived) << '\n';
 
             std::string tmp = std::string(buffer, bytesReceived);
-            tmp = processHTTPRequest(tmp);
+            tmp = modifyHTTPRequest(tmp);
             std::cerr << tmp << '\n';
             int bytesSent = SSL_write(serverSSL, tmp.c_str(), tmp.size());
             if (bytesSent <= 0) {
