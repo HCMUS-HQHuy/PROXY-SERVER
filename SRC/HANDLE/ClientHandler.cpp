@@ -1,9 +1,10 @@
 #include "./../../HEADER/ClientHandler.h"
+#include "./../../HEADER/ThreadManager.h"
 #include <chrono>
 
 ClientHandler::ClientHandler(SOCKET sock) {
-    // activeThreads++;
-    // std::cout << "Thread started. Active threads: " << activeThreads.load() << std::endl;
+    activeThreads++;
+    std::cout << "Thread started. Active threads: " << activeThreads.load() << std::endl;
     clientSocket = sock;
     remoteSocket = connectToServer();
 }
@@ -11,8 +12,8 @@ ClientHandler::ClientHandler(SOCKET sock) {
 ClientHandler::~ClientHandler() {
     closesocket(clientSocket);
     closesocket(remoteSocket);
-    // activeThreads--;
-    // std::cout << "Thread finished. Active threads: " << activeThreads.load() << std::endl;
+    activeThreads--;
+    std::cout << "Thread finished. Active threads: " << activeThreads.load() << std::endl;
 }
 
 void ClientHandler::handleRequest() {

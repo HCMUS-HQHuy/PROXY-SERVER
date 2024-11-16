@@ -1,4 +1,5 @@
 #include "./../../HEADER/NetworkManager.h"
+#include <iphlpapi.h>
 
 NetworkManager::NetworkManager() {
     IPv4 = getIPv4();

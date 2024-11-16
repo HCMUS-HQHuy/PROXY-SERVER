@@ -1,7 +1,5 @@
 #include "./../../HEADER/ProxyServer.h"
 #include "./../../HEADER/ClientHandler.h"
-#include <thread>
-#include <bits/shared_ptr.h>
 
 ProxyServer::ProxyServer(int p) {
     port = p;
@@ -29,6 +27,7 @@ void ProxyServer::start() {
 }
 
 void ProxyServer::stop() {
+    
 }
 
 void ProxyServer::waitingClient() {
