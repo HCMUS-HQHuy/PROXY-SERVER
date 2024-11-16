@@ -6,6 +6,12 @@
 #include <openssl/applink.c>
 #include <string>
 #include <sstream>
+#include <vector>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <openssl/x509v3.h>
+#include <openssl/rand.h>
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "libssl.lib")
@@ -63,25 +69,176 @@ bool getHostFromRequest(const std::string request, std::string &hostname, int &p
     return true;
 }
 
-// Initialization functions
+// Hàm tạo serial number ngẫu nhiên để tránh bị trùng lặp
+ASN1_INTEGER* generateSerialNumber() {
+    ASN1_INTEGER* serial = ASN1_INTEGER_new();
+    if (!serial) {
+        std::cerr << "Error creating serial number.\n";
+        return nullptr;
+    }
 
-void InitWinsock();
-void InitOpenSSL();
+    // Sinh số ngẫu nhiên
+    unsigned char randBytes[16];
+    if (RAND_bytes(randBytes, sizeof(randBytes)) != 1) {
+        std::cerr << "Error generating random serial number.\n";
+        ASN1_INTEGER_free(serial);
+        return nullptr;
+    }
+
+    // Đặt số ngẫu nhiên vào serial number
+    BIGNUM* bn = BN_bin2bn(randBytes, sizeof(randBytes), nullptr);
+    BN_to_ASN1_INTEGER(bn, serial);
+    BN_free(bn);
+    return serial;
+}
+
+std::vector<std::string> generateSANs(const std::string& host) {
+    std::vector<std::string> sanList;
+
+    // Thêm host chính
+    sanList.push_back(host);
+
+    // Nếu host bắt đầu bằng "www.", thêm phiên bản không "www."
+    if (host.find("www.") == 0) {
+        sanList.push_back(host.substr(4)); // Loại bỏ "www."
+    } else {
+        // Nếu host không bắt đầu bằng "www.", thêm phiên bản có "www."
+        sanList.push_back("www." + host);
+    }
+
+    // Thêm các subdomain phổ biến
+    const std::vector<std::string> commonSubdomains = {"api", "cdn", "mail"};
+    for (const auto& subdomain : commonSubdomains) {
+        size_t pos = host.find(".");
+        if (pos != std::string::npos) {
+            std::string baseDomain = host.substr(pos + 1);
+            sanList.push_back(subdomain + "." + baseDomain);
+        }
+    }
+
+    return sanList;
+}
+
+X509_EXTENSION* addSAN(const std::string& host) {
+    std::vector<std::string> sanList = generateSANs(host);
+    std::string sanEntry = "";
+    for (size_t i = 0; i < sanList.size(); ++i) {
+        if (i > 0) {
+            sanEntry += ", ";
+        }
+        sanEntry += "DNS:" + sanList[i];
+    }
+    std::cerr << sanEntry << '\n';
+    STACK_OF(CONF_VALUE)* sk = nullptr;
+    CONF_VALUE* value = nullptr;
+
+    sk = sk_CONF_VALUE_new_null();
+    value = (CONF_VALUE*)OPENSSL_malloc(sizeof(CONF_VALUE));
+    value->name = nullptr;
+    value->value = strdup(sanEntry.c_str());
+    sk_CONF_VALUE_push(sk, value);
+
+    X509_EXTENSION* ext = X509V3_EXT_conf_nid(nullptr, nullptr, NID_subject_alt_name, sanEntry.c_str());
+    return ext;
+}
+
+bool generateCertificate(const std::string& host,
+                         const std::string& outputCertPath,
+                         const std::string& outputKeyPath,
+                         const std::string& rootKeyPath,
+                         const std::string& rootCertPath) {
+    const int keyBits = 2048; // RSA key length
+    const int validityDays = 365; // Certificate validity in days
+
+    // Generate RSA private key
+    RSA* rsaKey = RSA_generate_key(keyBits, RSA_F4, nullptr, nullptr);
+    EVP_PKEY* privateKey = EVP_PKEY_new();
+    EVP_PKEY_assign_RSA(privateKey, rsaKey);
+
+    // Create a new certificate
+    X509* cert = X509_new();
+    X509_set_version(cert, 2);
+    ASN1_INTEGER* serial = generateSerialNumber();
+    if (!serial) {
+        std::cerr << "Error generating serial number.\n";
+        return false;
+    }
+    X509_set_serialNumber(cert, serial);
+    ASN1_INTEGER_free(serial);
+    
+    X509_gmtime_adj(X509_get_notBefore(cert), 0);
+    X509_gmtime_adj(X509_get_notAfter(cert), validityDays * 24 * 60 * 60);
+
+    // Set certificate subject name
+    X509_NAME* name = X509_get_subject_name(cert);
+    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (const unsigned char*)host.c_str(), -1, -1, 0);
+    X509_set_subject_name(cert, name);
+
+    // Set public key
+    X509_set_pubkey(cert, privateKey);
+
+    // Add SAN extension
+    X509_EXTENSION* sanExtension = addSAN(host);
+    X509_add_ext(cert, sanExtension, -1);
+
+    // Load root key and root certificate
+    FILE* rootKeyFile = fopen(rootKeyPath.c_str(), "r");
+    FILE* rootCertFile = fopen(rootCertPath.c_str(), "r");
+    if (!rootKeyFile || !rootCertFile) {
+        std::cerr << "Cannot open root key or root certificate files.\n";
+        return false;
+    }
+    EVP_PKEY* rootKey = PEM_read_PrivateKey(rootKeyFile, nullptr, nullptr, nullptr);
+    X509* rootCert = PEM_read_X509(rootCertFile, nullptr, nullptr, nullptr);
+    fclose(rootKeyFile);
+    fclose(rootCertFile);
+
+    if (!rootKey || !rootCert) {
+        std::cerr << "Error loading root key or root certificate.\n";
+        return false;
+    }
+
+    // Set issuer name to root certificate's subject name
+    X509_set_issuer_name(cert, X509_get_subject_name(rootCert));
+
+    // Sign the certificate using the root key
+    if (!X509_sign(cert, rootKey, EVP_sha256())) {
+        std::cerr << "Error signing certificate.\n";
+        return false;
+    }
+
+    // Save the generated certificate and private key
+    FILE* certFile = fopen(outputCertPath.c_str(), "w");
+    FILE* keyFile = fopen(outputKeyPath.c_str(), "w");
+    if (!certFile || !keyFile) {
+        std::cerr << "Cannot open output files for writing.\n";
+        return false;
+    }
+    PEM_write_X509(certFile, cert);
+    PEM_write_PrivateKey(keyFile, privateKey, nullptr, nullptr, 0, nullptr, nullptr);
+    fclose(certFile);
+    fclose(keyFile);
+
+    // Free resources
+    EVP_PKEY_free(privateKey);
+    X509_free(cert);
+    EVP_PKEY_free(rootKey);
+    X509_free(rootCert);
+
+    std::cout << "Certificate generated successfully for " << host << ".\n";
+    return true;
+}
+
 void clientHandler(SOCKET);
 void HTTPHandler(SOCKET, char*, int);
 void HTTPSHandler(SOCKET, char*, int);
 void relayData(SSL* clientSSL, SSL* serverSSL);
-SSL_CTX* CreateSSLContext();
 
 int main() {
-    InitWinsock();
-    InitOpenSSL();
-
-    SSL_CTX* ctx = CreateSSLContext();
-    if (!ctx) {
-        std::cerr << "SSL context creation failed." << std::endl;
-        return -1;
-    }
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+    SSL_load_error_strings();
+    OpenSSL_add_ssl_algorithms();
 
     // Set up server socket
     SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -104,37 +261,9 @@ int main() {
         clientHandler(clientSocket);
     }
 
-    SSL_CTX_free(ctx);
     WSACleanup();
     return 0;
 }
-
-void InitWinsock() {
-    WSADATA wsaData;
-    WSAStartup(MAKEWORD(2, 2), &wsaData);
-}
-
-void InitOpenSSL() {
-    SSL_load_error_strings();
-    OpenSSL_add_ssl_algorithms();
-}
-
-SSL_CTX* CreateSSLContext() {
-    const SSL_METHOD* method = SSLv23_server_method();
-    SSL_CTX* ctx = SSL_CTX_new(method);
-    if (!ctx) {
-        ERR_print_errors_fp(stderr);
-        return nullptr;
-    }
-    if (SSL_CTX_use_certificate_file(ctx, "./CERTIFICATE/root.crt", SSL_FILETYPE_PEM) <= 0 ||
-        SSL_CTX_use_PrivateKey_file(ctx, "./CERTIFICATE/root.key", SSL_FILETYPE_PEM) <= 0) {
-        ERR_print_errors_fp(stderr);
-        SSL_CTX_free(ctx);
-        return nullptr;
-    }
-    return ctx;
-}
-
 
 void clientHandler(SOCKET clientSocket) {
     char buffer[4096];
@@ -218,14 +347,14 @@ SSL_CTX* createSSLContext(const char* certFile, const char* keyFile) {
 }
 
 // Kết nối HTTPS đến server đích qua OpenSSL
-SSL* connectToTargetServer(const std::string& host, int port) {
+SSL* connectToTargetServer(const std::string& host, int port, SOCKET serverSocket) {
     SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
     if (!ctx) {
         std::cerr << "CANNOT create SSL for server.\n";
         return nullptr;
     }
 
-    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (serverSocket == INVALID_SOCKET) {
         std::cerr << "Socket creation failed.\n";
@@ -270,7 +399,20 @@ void HTTPSHandler(SOCKET clientSocket, char* buffer, int bytesReceived) {
     const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
     int byteSent = send(clientSocket, response, strlen(response), 0);
 
-    SSL_CTX* clientCtx = createSSLContext("./CERTIFICATE/wikipedia.crt", "./CERTIFICATE/wikipedia.key");
+    const std::string rootKeyPath = "./CERTIFICATE/root.key";
+    const std::string rootCertPath = "./CERTIFICATE/root.crt";
+    const std::string outputKeyPath = "./CERTIFICATE/generated.key";
+    const std::string outputCertPath = "./CERTIFICATE/generated.crt";
+    
+    if (!generateCertificate(host, outputCertPath, outputKeyPath, rootKeyPath, rootCertPath)) {
+        std::cerr << "Failed to generate certificate.\n";
+        return;
+    }
+
+    std::cout << "Certificate and key saved to: " << outputCertPath << ", " << outputKeyPath << "\n";
+    
+
+    SSL_CTX* clientCtx = createSSLContext(outputCertPath.c_str(), outputKeyPath.c_str());
     if (!clientCtx) return;
 
     SSL* clientSSL = SSL_new(clientCtx);
@@ -281,7 +423,6 @@ void HTTPSHandler(SOCKET clientSocket, char* buffer, int bytesReceived) {
         return;
     }
 
-
     if (SSL_accept(clientSSL) <= 0) {
         std::cerr << "CANNOT ACCEPT clientSSL\n";
         ERR_print_errors_fp(stderr);
@@ -291,9 +432,9 @@ void HTTPSHandler(SOCKET clientSocket, char* buffer, int bytesReceived) {
         return;
     }
 
-
     // Kết nối đến server thực qua HTTPS
-    SSL* serverSSL = connectToTargetServer(host, port);
+    SOCKET remoteSocket;
+    SSL* serverSSL = connectToTargetServer(host, port, remoteSocket);
     if (!serverSSL) {
         std::cerr << "Cannot connect to server.\n";
         SSL_shutdown(clientSSL);
@@ -309,6 +450,7 @@ void HTTPSHandler(SOCKET clientSocket, char* buffer, int bytesReceived) {
     SSL_shutdown(clientSSL);
     SSL_free(clientSSL);
     closesocket(clientSocket);
+    closesocket(remoteSocket);
 }
 
 std::string processHTTPRequest(const std::string& request) {
