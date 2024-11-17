@@ -42,10 +42,10 @@ void ClientHandler::handleRequest() {
             const auto& currentTime = std::chrono::steady_clock::now();
             const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count();
             if (idleDuration > MAX_IDLE_TIME) {
-                std::cerr << "Idle timeout reached. Closing connection.\n";
+                // std::cerr << "Idle timeout reached. Closing connection.\n";
                 break;
             }
-            std::cerr << "Timeout - no data activity\n";
+            // std::cerr << "Timeout - no data activity\n";
             continue;
         }
 
@@ -55,7 +55,7 @@ void ClientHandler::handleRequest() {
         // Kiểm tra lỗi hoặc ngắt kết nối cho cả hai socket
         for (int t = 0; t < 2; ++t) {
             if (fds[t].revents & (POLLHUP | POLLERR | POLLNVAL)) {
-                std::cerr << "Socket from " << (t == 0 ? "client" : "server") << " closed.\n";
+                // std::cerr << "Socket from " << (t == 0 ? "client" : "server") << " closed.\n";
                 return;
             }
         }
@@ -63,7 +63,7 @@ void ClientHandler::handleRequest() {
         if (fds[0].revents & POLLIN) {
             int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
             if (bytesReceived <= 0) {
-                std::cerr << "Client closed connection.\n";
+                // std::cerr << "Client closed connection.\n";
                 break;
             }
             send(remoteSocket, buffer, bytesReceived, 0);
@@ -71,7 +71,7 @@ void ClientHandler::handleRequest() {
         if (fds[1].revents & POLLIN) {
             int bytesReceived = recv(remoteSocket, buffer, BUFFER_SIZE, 0);
             if (bytesReceived <= 0) {
-                std::cerr << "Server closed connection.\n";
+                // std::cerr << "Server closed connection.\n";
                 break;
             }
             send(clientSocket, buffer, bytesReceived, 0);
@@ -84,7 +84,7 @@ SOCKET ClientHandler::connectToServer() {
     string host; int port; 
     message.getHostFromRequest(host, port);
     hostent* hostInfo = gethostbyname(host.c_str());
-    std::cerr << host << " " << port <<'\n';
+    // std::cerr << host << " " << port <<'\n';
     if (hostInfo == nullptr) {
         std::cerr << "Failed to resolve host name." << std::endl;
         return SOCKET_ERROR;
