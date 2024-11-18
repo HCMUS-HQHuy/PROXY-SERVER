@@ -1,12 +1,18 @@
 #ifndef REQUEST_H
 #define REQUEST_H
 
-// #include "./Setting.h"
-// #include "./Message.h"
+#include "./Setting.h"
+#include "./SocketHandler.h"
 
-// class Request: public Message {
-// public:
-//     Request(string &MSG);
-// };
+class RequestHandler{
+private:
+    SocketHandler* socketHandler;
+    void modifyRequest(std::string& requestData);
+public:
+    RequestHandler(SocketHandler* socketHandler);
+    bool handleRequest();
+};
+
+
 
 #endif

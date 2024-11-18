@@ -1,6 +1,7 @@
 TEST.cpp
 *.exe
 BIN
-CERTIFICATE
 .vscode
 tmp.cpp
+CERTIFICATE/generated.crt
+CERTIFICATE/generated.key

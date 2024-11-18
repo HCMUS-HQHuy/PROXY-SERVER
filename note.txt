@@ -1,0 +1,108 @@
+// Abstract class đại diện cho một Message chung
+class Message {
+protected:
+    std::string body;
+    std::map<std::string, std::string> headers;
+    
+public:
+    virtual void parse(const std::string& rawData) = 0; // Phân tích dữ liệu thô (parsing)
+    virtual std::string format() const = 0; // Chuyển thành định dạng thô (formatting)
+    virtual ~Message() {}
+};
+
+// Lớp đại diện cho một HTTP Request
+class Request : public Message {
+private:
+    std::string method;  // Phương thức HTTP (GET, POST, ...)
+    std::string url;     // URL của yêu cầu
+
+public:
+    Request(const std::string& method, const std::string& url) : method(method), url(url) {}
+
+    void parse(const std::string& rawData) override {
+        // Phân tích dữ liệu yêu cầu (chẳng hạn như lấy method, URL, headers, body, ...)
+    }
+
+    std::string format() const override {
+        // Chuyển đổi HTTP Request thành chuỗi thô (raw string)
+        return method + " " + url + " HTTP/1.1\r\n" + headers_to_string() + "\r\n" + body;
+    }
+
+    // Các phương thức riêng cho Request
+    std::string getMethod() const { return method; }
+    std::string getUrl() const { return url; }
+    // ...
+};
+
+// Lớp đại diện cho một HTTP Response
+class Response : public Message {
+private:
+    int statusCode;     // Mã trạng thái HTTP (200, 404, ...)
+    std::string statusMessage;  // Thông điệp trạng thái
+
+public:
+    Response(int statusCode, const std::string& statusMessage)
+        : statusCode(statusCode), statusMessage(statusMessage) {}
+
+    void parse(const std::string& rawData) override {
+        // Phân tích dữ liệu phản hồi (statusCode, statusMessage, headers, body, ...)
+    }
+
+    std::string format() const override {
+        // Chuyển đổi HTTP Response thành chuỗi thô (raw string)
+        return "HTTP/1.1 " + std::to_string(statusCode) + " " + statusMessage + "\r\n" + headers_to_string() + "\r\n" + body;
+    }
+
+    // Các phương thức riêng cho Response
+    int getStatusCode() const { return statusCode; }
+    std::string getStatusMessage() const { return statusMessage; }
+    // ...
+};
+
+
+class Message {
+protected:
+    std::string data;
+    bool isHttps;
+    SenderReceiver* senderReceiver;  // Strategy Pattern
+
+public:
+    Message(bool https) : isHttps(https) {
+        if (isHttps) {
+            senderReceiver = new HttpsSenderReceiver();
+        } else {
+            senderReceiver = new HttpSenderReceiver();
+        }
+    }
+
+    ~Message() {
+        delete senderReceiver;
+    }
+
+    int send(SOCKET s, const char* buf, int len, int flags) {
+        return senderReceiver->send(s, buf, len, flags);
+    }
+
+    int recv(SOCKET s, char* buf, int len, int flags) {
+        return senderReceiver->recv(s, buf, len, flags);
+    }
+};
+
+
+class Message {
+protected:
+    SenderReceiver* senderReceiver;
+public:
+    Message(SenderReceiver* strategy) : senderReceiver(strategy) {}
+
+    int send(SOCKET s, const char* buf, int len, int flags) {
+        return senderReceiver->send(s, buf, len, flags);
+    }
+
+    int recv(SOCKET s, char* buf, int len, int flags) {
+        return senderReceiver->recv(s, buf, len, flags);
+    }
+};
+
+SenderReceiver* strategy = isHttps ? new HttpsSenderReceiver() : new HttpSenderReceiver();
+Message* message = new Message(strategy);

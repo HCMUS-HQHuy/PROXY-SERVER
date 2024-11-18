@@ -1,16 +1,16 @@
-#ifndef CLIENTHANDLE_H
-#define CLIENTHANDLE_H
+#ifndef CLIENTHANDLER_H
+#define CLIENTHANDLER_H
 
 #include "./setting.h"
+#include "./SocketHandler.h"
 #include "./Message.h"
+#include "./Request.h"
+#include "./Response.h"
+#include "./ThreadManager.h"
 
 class ClientHandler {
 private:
-    SOCKET clientSocket;
-    SOCKET remoteSocket;
-    // Request request;
-    // Response response:
-    SOCKET connectToServer();
+    SocketHandler* socketHandler;
 public:
     ClientHandler(SOCKET sock);
     ~ClientHandler();

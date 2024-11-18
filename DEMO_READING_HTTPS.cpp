@@ -9,8 +9,6 @@
 #include <unordered_map>
 #include <vector>
 #include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/rsa.h>
 #include <openssl/x509v3.h>
 #include <openssl/rand.h>
 

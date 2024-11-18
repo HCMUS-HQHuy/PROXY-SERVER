@@ -5,7 +5,7 @@ set src_dir=./SRC
 set obj_dir=./BIN
 set compiler=g++
 set flags=-c -Wall -Wextra -Wcast-align -Wwrite-strings -Waggregate-return -O2
-set libs=-lgdi32 -luser32 -lws2_32 -liphlpapi
+set libs=-lgdi32 -luser32 -lws2_32 -liphlpapi  -I"C:/Program Files/OpenSSL-Win64/include" -L"C:\Program Files\OpenSSL-Win64\lib\VC\x64\MT" -lssl -lcrypto -fpermissive
 set output=./BIN/demo.exe
 
 if not exist "%obj_dir%" mkdir "%obj_dir%"
