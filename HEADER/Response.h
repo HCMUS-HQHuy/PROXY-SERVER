@@ -2,15 +2,13 @@
 #define RESPONSE
 
 #include "./Setting.h"
-#include "./SocketHandler.h"
+#include "./HttpHandler.h"
 
-class ResponseHandler{
+class ResponseHandler : public HttpHandler{
 private:
-    SocketHandler* socketHandler;
     void modifyResponse(std::string& responseData);
-    
 public:
-    ResponseHandler(SocketHandler* socketHandler);
+    ResponseHandler(SocketHandler* _socketHandler);
     bool handleResponse();
 };
 

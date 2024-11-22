@@ -2,11 +2,11 @@
 #define REQUEST_H
 
 #include "./Setting.h"
-#include "./SocketHandler.h"
+#include "./HttpHandler.h"
 
-class RequestHandler{
+
+class RequestHandler: public HttpHandler{
 private:
-    SocketHandler* socketHandler;
     void modifyRequest(std::string& requestData);
 public:
     RequestHandler(SocketHandler* socketHandler);

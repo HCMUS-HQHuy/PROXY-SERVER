@@ -6,14 +6,15 @@
 #include <string>
 
 enum Protocol { HTTP, HTTPS };
+enum Socket {browser, server};
 
 class SocketHandler {
     
 private:
     std::string host;
 
-    SSL_CTX* remoteCtx;
-    SSL_CTX* browserCtx;
+    SSL_CTX* ctxID[2];
+    // SSL_CTX* browserCtx;
 
     SOCKET connectToServer();
     bool setSSLbrowser();
@@ -22,18 +23,16 @@ private:
 public:
     Protocol protocol;
 
-    SOCKET remoteSocket;
-    SOCKET browserSocket;
+    SOCKET socketID[2];
+    // SOCKET browserSocket;
 
-    SSL* remoteSSL;
-    SSL* browserSSL;
+    SSL* sslID[2];
+    // SSL* browserSSL;
 
     SocketHandler(SOCKET browser);
-
     ~SocketHandler();
-
-    bool isValid();
     bool setSSLContexts();
+    bool isValid();
 };
 
 #endif

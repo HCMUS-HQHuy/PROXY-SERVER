@@ -3,7 +3,6 @@
 
 #include "./setting.h"
 #include "./SocketHandler.h"
-#include "./Message.h"
 #include "./Request.h"
 #include "./Response.h"
 #include "./ThreadManager.h"

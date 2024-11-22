@@ -245,11 +245,11 @@ SSL_CTX* createSSLContext(const char* certFile, const char* keyFile) {
     return ctx;
 }
 
-SocketHandler::SocketHandler(SOCKET browser) {
-    remoteSSL = browserSSL = nullptr;
-    browserSocket = browser;
+SocketHandler::SocketHandler(SOCKET fromBrowser) {
+    sslID[browser] = sslID[server] = nullptr;
+    socketID[browser] = fromBrowser;
     protocol = HTTP;
-    remoteSocket = connectToServer();
+    socketID[server] = connectToServer();
     if (protocol == HTTPS) {
         SSL_library_init();      // Khởi tạo thư viện OpenSSL
         SSL_load_error_strings(); // Tải chuỗi lỗi của OpenSSL
@@ -258,20 +258,16 @@ SocketHandler::SocketHandler(SOCKET browser) {
 }
 
 SocketHandler::~SocketHandler() {
-    if (protocol == HTTPS) {
-        SSL_shutdown(remoteSSL);
-        SSL_shutdown(browserSSL);
-        
-        SSL_CTX_free(remoteCtx);
-        SSL_CTX_free(browserCtx);
-        
-        SSL_free(remoteSSL);
-        SSL_free(browserSSL);
-        remoteSSL = browserSSL = nullptr;
-        remoteCtx = browserCtx = nullptr;
+    for (int i: {0, 1}) {
+        if (protocol == HTTPS) {
+            SSL_shutdown(sslID[i]);
+            SSL_CTX_free(ctxID[i]);
+            SSL_free(sslID[i]);
+            sslID[i] = nullptr; 
+            ctxID[i] = nullptr;
+        }
+        closesocket(socketID[i]); socketID[i] = -1;
     }
-    closesocket(browserSocket); browserSocket = -1;
-    closesocket(remoteSocket); remoteSocket = -1;
 }
 
 bool SocketHandler::setSSLContexts() {
@@ -288,19 +284,18 @@ bool SocketHandler::setSSLbrowser() {
         std::cerr << "Failed to generate certificate.\n";
         return false;
     }
-    // std::cout << "Certificate and key saved to: " << outputCertPath << ", " << outputKeyPath << "\n";
-    browserCtx = createSSLContext(outputCertPath.c_str(), outputKeyPath.c_str());
-    if (!browserCtx) return false;
+    ctxID[browser] = createSSLContext(outputCertPath.c_str(), outputKeyPath.c_str());
+    if (!ctxID[browser]) return false;
 
-    browserSSL = SSL_new(browserCtx);
-    SSL_set_fd(browserSSL, browserSocket);
+    sslID[browser] = SSL_new(ctxID[browser]);
+    SSL_set_fd(sslID[browser], socketID[browser]);
 
-    if (SSL_get_verify_result(browserSSL) != X509_V_OK) {
+    if (SSL_get_verify_result(sslID[browser]) != X509_V_OK) {
         std::cerr << "SSL certificate verification failed\n";
         return false;
     }
 
-    if (SSL_accept(browserSSL) <= 0) {
+    if (SSL_accept(sslID[browser]) <= 0) {
         std::cerr << "CANNOT ACCEPT clientSSL\n";
         ERR_print_errors_fp(stderr);
         return false;
@@ -309,16 +304,16 @@ bool SocketHandler::setSSLbrowser() {
 }
 
 bool SocketHandler::setSSLserver() {
-    remoteCtx = SSL_CTX_new(TLS_client_method());
-    if (!remoteCtx) {
+    ctxID[server] = SSL_CTX_new(TLS_client_method());
+    if (!ctxID[server]) {
         std::cerr << "CANNOT create SSL for server.\n";
         return false;
     }
     
-    remoteSSL = SSL_new(remoteCtx);
-    SSL_set_fd(remoteSSL, remoteSocket);
-    if (SSL_connect(remoteSSL) <= 0) {
-        int err = SSL_get_error(remoteSSL, -1);
+    sslID[server] = SSL_new(ctxID[server]);
+    SSL_set_fd(sslID[server], socketID[server]);
+    if (SSL_connect(sslID[server]) <= 0) {
+        int err = SSL_get_error(sslID[server], -1);
         std::cerr << "SSL_connect failed with error code: " << err << '\n';
         ERR_print_errors_fp(stderr);
         return false;
@@ -327,13 +322,16 @@ bool SocketHandler::setSSLserver() {
 }
 
 bool SocketHandler::isValid() {
-    return remoteSocket != INVALID_SOCKET && remoteSocket != SOCKET_ERROR
-        && browserSocket != INVALID_SOCKET && browserSocket != SOCKET_ERROR;
+    for (int i:{0, 1}) {
+        if (socketID[i] == INVALID_SOCKET || socketID[i] == SOCKET_ERROR)
+            return false;
+    }
+    return true;
 }
 
 SOCKET SocketHandler::connectToServer() {
     const int BUFFER_SIZE = 1024;
-    char buffer[BUFFER_SIZE]; int bytesRecv = recv(browserSocket, buffer, BUFFER_SIZE, 0);
+    char buffer[BUFFER_SIZE]; int bytesRecv = recv(socketID[browser], buffer, BUFFER_SIZE, 0);
 
     int port; 
     parseHostAndPort(std::string(buffer, bytesRecv), host, port);
@@ -364,7 +362,7 @@ SOCKET SocketHandler::connectToServer() {
     std::cout << "HOST: " << host << " " << port << '\n';
     if (port == HTTPS_PORT) {
         const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
-        int byteSent = send(browserSocket, response, strlen(response), 0);
+        int byteSent = send(socketID[browser], response, strlen(response), 0);
         if (byteSent != strlen(response)) {
             closesocket(remoteSocket);
             return SOCKET_ERROR;

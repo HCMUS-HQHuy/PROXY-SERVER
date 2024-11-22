@@ -22,18 +22,14 @@ void ClientHandler::handleRequest() {
     if (socketHandler->setSSLContexts() == false) return;
 
     struct pollfd fds[2];
-    fds[0].fd = socketHandler->browserSocket;
-    fds[0].events = POLLIN;  
-
-    fds[1].fd = socketHandler->remoteSocket;
-    fds[1].events = POLLIN;  
+    for (int i: {0, 1}) {
+        fds[i].fd = socketHandler->socketID[i];
+        fds[i].events = POLLIN;  
+    }
 
     #define TIMEOUT 1000 
-    #define BUFFER_SIZE 1024
     #define MAX_IDLE_TIME 100
 
-
-    char buffer[BUFFER_SIZE];
     auto lastActivity = std::chrono::steady_clock::now();
     int STEP = 0;
     while (true) {
