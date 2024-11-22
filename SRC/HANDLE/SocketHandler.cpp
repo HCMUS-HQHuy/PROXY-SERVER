@@ -1,6 +1,7 @@
 #include "./../../HEADER/SocketHandler.h"
 #include <iostream>
 #include <string>
+#include <map>
 #include <algorithm>
 #include <vector>
 #include <sstream>
@@ -130,7 +131,7 @@ X509_EXTENSION* addSAN(const std::string& host) {
         }
         sanEntry += "DNS:" + sanList[i];
     }
-    std::cerr << sanEntry << '\n';
+    // std::cerr << sanEntry << '\n';
     STACK_OF(CONF_VALUE)* sk = nullptr;
     CONF_VALUE* value = nullptr;
 
@@ -149,6 +150,7 @@ bool generateCertificate(const std::string& host,
                          const std::string& outputKeyPath,
                          const std::string& rootKeyPath,
                          const std::string& rootCertPath) {
+    if (fopen(outputCertPath.c_str(), "r")) return true;
     const int keyBits = 2048; // RSA key length
     const int validityDays = 365; // Certificate validity in days
 
@@ -233,6 +235,7 @@ bool generateCertificate(const std::string& host,
 
 SSL_CTX* createSSLContext(const char* certFile, const char* keyFile) {
     SSL_CTX* ctx = SSL_CTX_new(TLS_server_method());
+    SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_SERVER);
     if (!SSL_CTX_use_certificate_file(ctx, certFile, SSL_FILETYPE_PEM) ||
         !SSL_CTX_use_PrivateKey_file(ctx, keyFile, SSL_FILETYPE_PEM)) {
         ERR_print_errors_fp(stderr);
@@ -243,20 +246,32 @@ SSL_CTX* createSSLContext(const char* certFile, const char* keyFile) {
 }
 
 SocketHandler::SocketHandler(SOCKET browser) {
-    browserSocket = browser;
-    remoteSocket = connectToServer();
     remoteSSL = browserSSL = nullptr;
+    browserSocket = browser;
+    protocol = HTTP;
+    remoteSocket = connectToServer();
+    if (protocol == HTTPS) {
+        SSL_library_init();      // Khởi tạo thư viện OpenSSL
+        SSL_load_error_strings(); // Tải chuỗi lỗi của OpenSSL
+        OpenSSL_add_all_algorithms(); // Thêm các thuật toán mã hóa (optional)
+    }
 }
 
 SocketHandler::~SocketHandler() {
     if (protocol == HTTPS) {
+        SSL_shutdown(remoteSSL);
+        SSL_shutdown(browserSSL);
+        
         SSL_CTX_free(remoteCtx);
         SSL_CTX_free(browserCtx);
-        if (remoteSSL) SSL_free(remoteSSL);
-        if (browserSSL) SSL_free(browserSSL);
+        
+        SSL_free(remoteSSL);
+        SSL_free(browserSSL);
+        remoteSSL = browserSSL = nullptr;
+        remoteCtx = browserCtx = nullptr;
     }
-    closesocket(browserSocket);
-    closesocket(remoteSocket);
+    closesocket(browserSocket); browserSocket = -1;
+    closesocket(remoteSocket); remoteSocket = -1;
 }
 
 bool SocketHandler::setSSLContexts() {
@@ -267,13 +282,13 @@ bool SocketHandler::setSSLContexts() {
 bool SocketHandler::setSSLbrowser() {
     const std::string rootKeyPath = "./CERTIFICATE/root.key";
     const std::string rootCertPath = "./CERTIFICATE/root.crt";
-    const std::string outputKeyPath = "./CERTIFICATE/generated.key";
-    const std::string outputCertPath = "./CERTIFICATE/generated.crt";
+    const std::string outputKeyPath = "./CERTIFICATE/GENERATED/" + host + ".key";
+    const std::string outputCertPath = "./CERTIFICATE/GENERATED/" + host + ".crt";
     if (!generateCertificate(host, outputCertPath, outputKeyPath, rootKeyPath, rootCertPath)) {
         std::cerr << "Failed to generate certificate.\n";
         return false;
     }
-    std::cout << "Certificate and key saved to: " << outputCertPath << ", " << outputKeyPath << "\n";
+    // std::cout << "Certificate and key saved to: " << outputCertPath << ", " << outputKeyPath << "\n";
     browserCtx = createSSLContext(outputCertPath.c_str(), outputKeyPath.c_str());
     if (!browserCtx) return false;
 
@@ -317,7 +332,6 @@ bool SocketHandler::isValid() {
 }
 
 SOCKET SocketHandler::connectToServer() {
-    // Message message; message.receiveMessage(clientSocket);
     const int BUFFER_SIZE = 1024;
     char buffer[BUFFER_SIZE]; int bytesRecv = recv(browserSocket, buffer, BUFFER_SIZE, 0);
 
@@ -347,7 +361,7 @@ SOCKET SocketHandler::connectToServer() {
         closesocket(remoteSocket);
         return SOCKET_ERROR;
     }
-
+    std::cout << "HOST: " << host << " " << port << '\n';
     if (port == HTTPS_PORT) {
         const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
         int byteSent = send(browserSocket, response, strlen(response), 0);
@@ -356,6 +370,6 @@ SOCKET SocketHandler::connectToServer() {
             return SOCKET_ERROR;
         }
         protocol = HTTPS;
-    }
+    } 
     return remoteSocket;
-}
+} 

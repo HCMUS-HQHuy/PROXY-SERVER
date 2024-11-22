@@ -37,7 +37,7 @@ void ProxyServer::waitingClient() {
         std::cerr << "Listen failed: " << WSAGetLastError() << std::endl;
         return;
     }
-    std::cerr << "Server is listenning on IPv4: " << IPv4 << " PORT: " <<  port << "...\n";
+    std::cout << "Server is listenning on IPv4: " << IPv4 << " PORT: " <<  port << "...\n";
 }
 
 SOCKET ProxyServer::acceptClient() {

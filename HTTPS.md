@@ -86,7 +86,9 @@ They will require you some information:
 # SOME NOTES:
 1. Serial number
 2. SAN for certificates
-3. Modify request 
+<!-- 3. Modify request  -->
+3. Có một vấn đề là nếu muốn xử lý MITM proxy thì ta phải phân giải được request dựa trên chunked và length_size. Sau đó dùng nó để gửi đến server. Sau đó làm tương tự để gửi lại cho browser.
+4. Khi chưa nhận đủ request từ browser thì server sẽ đứng đợi... do đó code bị delay và đang bug là nhận diện browser chưa đúng.
 
 # Some note for flags in g++
 + -l flag là để link các thư viện lại. Nó bỏ extension và bỏ cả prefix lib

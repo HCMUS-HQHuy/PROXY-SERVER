@@ -30,7 +30,7 @@ void ClientHandler::handleRequest() {
 
     #define TIMEOUT 1000 
     #define BUFFER_SIZE 1024
-    #define MAX_IDLE_TIME 5000
+    #define MAX_IDLE_TIME 100
 
 
     char buffer[BUFFER_SIZE];
@@ -38,36 +38,44 @@ void ClientHandler::handleRequest() {
     int STEP = 0;
     while (true) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
-        // std::cerr << "STEP: " << ++STEP << '\n';
+        std::cerr << "STEP: " << ++STEP << '\n';
         if (ret < 0) {
             std::cerr << "WSAPoll ERROR!\n";
             break;
         } else if (ret == 0) {
             // Kiểm tra idle timeout
             const auto& currentTime = std::chrono::steady_clock::now();
-            const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count();
+            const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count(); 
             if (idleDuration > MAX_IDLE_TIME) {
-                // std::cerr << "TIMEOUT\n";
+                std::cerr << "TIMEOUT\n";
                 break;
             }
-            // std::cerr <<"NO activity\n";
+            std::cerr <<"NO activity IN " << idleDuration << '\n';
             continue;
         }
-        
+        // bool ok = false;
+        for (int t = 0; t < 2; ++t)
+            if (fds[t].revents & (POLLERR | POLLHUP)) {
+                std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
+                return;
+            }
+        // if (!ok) {
+        //     std::cerr << "NO SOCKET!!\n";
+        //     break;
+        // }
         lastActivity = std::chrono::steady_clock::now();
 
         if (fds[0].revents & POLLIN) {
-            // std::cerr << "STEP: " << STEP << " browser\n";
+            std::cerr << "IN browser\n";
             RequestHandler request(socketHandler);
             if (request.handleRequest() == false) break;
         }
         if (fds[1].revents & POLLIN) {
-            // std::cerr << "STEP: " << STEP << " server\n";
+            std::cerr << "IN server\n";
             ResponseHandler response(socketHandler);
             if (response.handleResponse() == false) break;
         }
-        // std::cerr << "END STEP: " << STEP << '\n';
     }
-    // std::cerr << "FINISHED!!!!\n";
 }
 
+   

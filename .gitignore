@@ -3,5 +3,4 @@ TEST.cpp
 BIN
 .vscode
 tmp.cpp
-CERTIFICATE/generated.crt
-CERTIFICATE/generated.key
+CERTIFICATE/GENERATED
