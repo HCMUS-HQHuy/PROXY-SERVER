@@ -27,14 +27,13 @@ void ClientHandler::handleRequest() {
         fds[i].events = POLLIN;  
     }
 
-    #define TIMEOUT 1000 
-    #define MAX_IDLE_TIME 100
+    #define TIMEOUT 1000
+    #define MAX_IDLE_TIME 5000
 
     auto lastActivity = std::chrono::steady_clock::now();
     int STEP = 0;
     while (true) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
-        std::cerr << "STEP: " << ++STEP << '\n';
         if (ret < 0) {
             std::cerr << "WSAPoll ERROR!\n";
             break;
@@ -46,7 +45,7 @@ void ClientHandler::handleRequest() {
                 std::cerr << "TIMEOUT\n";
                 break;
             }
-            std::cerr <<"NO activity IN " << idleDuration << '\n';
+            // std::cerr <<"NO activity IN " << idleDuration << '\n';
             continue;
         }
         // bool ok = false;

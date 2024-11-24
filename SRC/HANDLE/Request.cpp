@@ -10,13 +10,13 @@ RequestHandler::RequestHandler(SocketHandler* _socketHandler){
 }
 
 bool RequestHandler::handleRequest() {
-    char buffer[10000];
     while (isEndMessage() == false) {
         int bytesReceived = receiveMessage(browser);
-        if (bytesReceived <= 0) break;
+        // std::cerr << "RECEIVED : " << bytesReceived << '\n';
+        // printHeader();
         int bytesSent = sendMessage(server, bytesReceived);
     }
-    printHeader();
+    // printHeader();
     return true;
 }
 

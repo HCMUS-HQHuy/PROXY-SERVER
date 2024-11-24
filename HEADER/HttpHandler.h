@@ -12,14 +12,23 @@ private:
     string header; 
     string body;
 
+    string chunkBuffer;
+    size_t chunkEnd;
+
     char *buffer;
 
-    bool flag;
+    bool flagEndMessage;
     int contentLength;
     int isChunked;
     bool headersParsed;
 
+    int STEP;
+
     void handleMessage(int bytesReceived);
+    void onFlagEnd() {flagEndMessage = true;}
+    void offFlagEnd() { flagEndMessage = false; }
+    
+    bool isEndChunk() { return chunkEnd == 0; }
 
 protected: 
     SocketHandler* socketHandler;
