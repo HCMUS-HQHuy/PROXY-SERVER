@@ -27,17 +27,25 @@ void ClientHandler::handleRequest() {
         fds[i].events = POLLIN;  
     }
 
-    #define TIMEOUT 1000
+    #define TIMEOUT 100
     #define MAX_IDLE_TIME 5000
 
     auto lastActivity = std::chrono::steady_clock::now();
-    int STEP = 0;
+    // int STEP = 0;
     while (true) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
+
+        for (int t = 0; t < 2; ++t)
+            if (fds[t].revents & (POLLERR | POLLHUP)) {
+                std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
+                return;
+            }
+
         if (ret < 0) {
             std::cerr << "WSAPoll ERROR!\n";
             break;
-        } else if (ret == 0) {
+        } 
+        else if (ret == 0) {
             // Kiểm tra idle timeout
             const auto& currentTime = std::chrono::steady_clock::now();
             const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count(); 
@@ -49,11 +57,6 @@ void ClientHandler::handleRequest() {
             continue;
         }
         // bool ok = false;
-        for (int t = 0; t < 2; ++t)
-            if (fds[t].revents & (POLLERR | POLLHUP)) {
-                std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
-                return;
-            }
         // if (!ok) {
         //     std::cerr << "NO SOCKET!!\n";
         //     break;
@@ -72,5 +75,3 @@ void ClientHandler::handleRequest() {
         }
     }
 }
-
-   

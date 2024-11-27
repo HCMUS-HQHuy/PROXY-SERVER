@@ -247,6 +247,7 @@ SSL_CTX* createSSLContext(const char* certFile, const char* keyFile) {
 
 SocketHandler::SocketHandler(SOCKET fromBrowser) {
     sslID[browser] = sslID[server] = nullptr;
+    ctxID[browser] = ctxID[server] = nullptr; // Cần giải thích vì sao nêu không có cái này thì việc giải phóng gặp lỗi.
     socketID[browser] = fromBrowser;
     protocol = HTTP;
     socketID[server] = connectToServer();
@@ -258,6 +259,7 @@ SocketHandler::SocketHandler(SOCKET fromBrowser) {
 }
 
 SocketHandler::~SocketHandler() {
+    std::cerr << "IN socketHandler Destructure\n";
     for (int i: {0, 1}) {
         if (protocol == HTTPS) {
             SSL_shutdown(sslID[i]);
@@ -268,18 +270,36 @@ SocketHandler::~SocketHandler() {
         }
         closesocket(socketID[i]); socketID[i] = -1;
     }
+    std::cerr << "END socketHandler Destructure\n";
 }
 
 bool SocketHandler::setSSLContexts() {
     if (protocol == HTTP) return true;
-    return setSSLbrowser() && setSSLserver();
+    if (setSSLbrowser() == false) return false;
+    if (setSSLserver() == false) return false;
+    return true;
 }
 
 bool SocketHandler::setSSLbrowser() {
+
+    std::string directoryName = "./CERTIFICATE/GENERATED";
+
+    // Check if the directory exists
+    if (GetFileAttributesA(directoryName.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        // Create the directory
+        if (CreateDirectoryA(directoryName.c_str(), NULL)) {
+            std::cout << "Directory '" << directoryName << "' created successfully.\n";
+        } else {
+            std::cerr << "Failed to create directory '" << directoryName << "'.\n";
+            return false;
+        }
+    }
+
     const std::string rootKeyPath = "./CERTIFICATE/root.key";
     const std::string rootCertPath = "./CERTIFICATE/root.crt";
     const std::string outputKeyPath = "./CERTIFICATE/GENERATED/" + host + ".key";
     const std::string outputCertPath = "./CERTIFICATE/GENERATED/" + host + ".crt";
+
     if (!generateCertificate(host, outputCertPath, outputKeyPath, rootKeyPath, rootCertPath)) {
         std::cerr << "Failed to generate certificate.\n";
         return false;
@@ -360,6 +380,7 @@ SOCKET SocketHandler::connectToServer() {
         return SOCKET_ERROR;
     }
     std::cout << "HOST: " << host << " " << port << '\n';
+    std::cerr << "HOST: " << host << " " << port << '\n';
     if (port == HTTPS_PORT) {
         const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
         int byteSent = send(socketID[browser], response, strlen(response), 0);

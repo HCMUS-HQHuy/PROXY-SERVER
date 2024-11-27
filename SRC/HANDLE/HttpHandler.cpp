@@ -40,7 +40,7 @@ int HttpHandler::sendMessage(Socket id, int sizeSending) {
 }
 
 int HttpHandler::receiveMessage(Socket id, int size) {
-    std::cerr << "STEP: " << ++STEP << '\n';
+    // std::cerr << "STEP: " << ++STEP << '\n';
     int bytesReceived = 0; 
     Protocol protocol = socketHandler->protocol;
     if (protocol == HTTP) {
@@ -62,7 +62,7 @@ int HttpHandler::receiveMessage(Socket id, int size) {
 }
 
 void HttpHandler::handleMessage(int bytesReceived) {
-    std::cerr << "HANDLER STEP: " << STEP << '\n';
+    // std::cerr << "HANDLER STEP: " << STEP << '\n';
     if (headersParsed == false) {
         header.append(buffer, bytesReceived);
         size_t headerEnd = header.find("\r\n\r\n");
@@ -84,7 +84,7 @@ void HttpHandler::handleMessage(int bytesReceived) {
                 // std::cout << "CURRENT: " << sz(body) << "/" << contentLength << '\n';
                 if (sz(body) >= contentLength) onFlagEnd();
             } else {
-                std::cout << "DON'T HAVE CONTENT LENGTH\n"; 
+                // std::cout << "DON'T HAVE CONTENT LENGTH\n"; 
                 if (header.find("Transfer-Encoding: chunked") != std::string::npos) {
                     isChunked = true;
                     chunkBuffer = body;
@@ -147,13 +147,13 @@ void HttpHandler::handleMessage(int bytesReceived) {
     }
 
     body.append(buffer, bytesReceived);
-    std::cerr << "body size: " << sz(body) << "/" << contentLength << '\n';
+    // std::cerr << "body size: " << sz(body) << "/" << contentLength << '\n';
     if (contentLength >= 0 && sz(body) >= contentLength) {
         std::cerr << "received: " << sz(body) << "/" << contentLength << '\n';
         onFlagEnd();
         return;
     }
-    std::cerr << "HANDLER STEP END AFTER ADD INTO BODY: " << STEP << '\n';
+    // std::cerr << "HANDLER STEP END AFTER ADD INTO BODY: " << STEP << '\n';
 }
 
 bool HttpHandler::isEndMessage() {

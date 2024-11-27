@@ -7,7 +7,6 @@
 
 class RequestHandler: public HttpHandler{
 private:
-    void modifyRequest(std::string& requestData);
 public:
     RequestHandler(SocketHandler* socketHandler);
     bool handleRequest();
