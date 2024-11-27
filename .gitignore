@@ -4,3 +4,4 @@ BIN
 .vscode
 tmp.cpp
 CERTIFICATE/GENERATED
+log.txt
