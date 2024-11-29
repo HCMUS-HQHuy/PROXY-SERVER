@@ -1,8 +1,8 @@
-#ifndef REQUEST_H
-#define REQUEST_H
+#ifndef REQUEST_HPP
+#define REQUEST_HPP
 
-#include "./Setting.h"
-#include "./HttpHandler.h"
+#include "./Setting.hpp"
+#include "./HttpHandler.hpp"
 
 
 class RequestHandler: public HttpHandler{

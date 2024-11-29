@@ -1,7 +1,7 @@
 #include <chrono>
 #include <algorithm>
 
-#include "./../../HEADER/ClientHandler.h"
+#include "./../../HEADER/ClientHandler.hpp"
 
 bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname, int& port) {
     std::cerr << request << '\n';

@@ -1,8 +1,8 @@
-#ifndef HTTPHANDLER_H
-#define HTTPHANDLER_H
+#ifndef HTTPHANDLER_HPP
+#define HTTPHANDLER_HPP
 
-#include "./setting.h"
-#include "./SocketHandler.h"
+#include "./setting.hpp"
+#include "./SocketHandler.hpp"
 
 #define BUFFER_SIZE 1024
 #define sz(s) (int)s.size()

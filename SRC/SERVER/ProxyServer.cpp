@@ -1,5 +1,5 @@
-#include "./../../HEADER/ProxyServer.h"
-#include "./../../HEADER/ClientHandler.h"
+#include "./../../HEADER/ProxyServer.hpp"
+#include "./../../HEADER/ClientHandler.hpp"
 
 ProxyServer::ProxyServer(int p) {
     port = p;

@@ -1,5 +1,5 @@
-#ifndef THREADPOOL_H
-#define THREADPOOL_H
+#ifndef THREADPOOL_HPP
+#define THREADPOOL_HPP
 
 #include <iostream>
 #include <thread>
@@ -7,7 +7,7 @@
 #include <vector>
 #include <condition_variable>
 #include <bits/shared_ptr.h>
-#include "ClientHandler.h"
+#include "./ClientHandler.hpp"
 
 class ThreadPool {
 private:

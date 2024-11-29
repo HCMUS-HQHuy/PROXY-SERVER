@@ -1,5 +1,5 @@
-#ifndef SOCKETHANDLER_H
-#define SOCKETHANDLER_H
+#ifndef SOCKETHANDLER_HPP
+#define SOCKETHANDLER_HPP
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>

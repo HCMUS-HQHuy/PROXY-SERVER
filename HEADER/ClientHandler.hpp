@@ -1,11 +1,11 @@
-#ifndef CLIENTHANDLER_H
-#define CLIENTHANDLER_H
+#ifndef CLIENTHANDLER_HPP
+#define CLIENTHANDLER_HPP
 
-#include "./setting.h"
-#include "./SocketHandler.h"
-#include "./Request.h"
-#include "./Response.h"
-#include "./ThreadManager.h"
+#include "./setting.hpp"
+#include "./SocketHandler.hpp"
+#include "./Request.hpp"
+#include "./Response.hpp"
+#include "./ThreadManager.hpp"
 
 class ClientHandler {
 private:

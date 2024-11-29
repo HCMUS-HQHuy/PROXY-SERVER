@@ -1,5 +1,5 @@
-#include "./../HEADER/Setting.h"
-#include "./../HEADER/ProxyServer.h"
+#include "./../HEADER/Setting.hpp"
+#include "./../HEADER/ProxyServer.hpp"
 
 int main() {
     ProxyServer proxyServer(LOCAL_PORT);

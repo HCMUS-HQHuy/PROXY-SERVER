@@ -1,5 +1,5 @@
-#ifndef THREADMANAGER_H
-#define THREADMANAGER_H
+#ifndef THREADMANAGER_HPP
+#define THREADMANAGER_HPP
 
 #include <atomic>
 

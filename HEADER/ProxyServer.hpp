@@ -1,9 +1,9 @@
-#ifndef PROXYSERVER_H
-#define PROXYSERVER_H
+#ifndef PROXYSERVER_HPP
+#define PROXYSERVER_HPP
 
-#include "./Setting.h"
-#include "./NetworkManager.h"
-#include "ThreadPool.h"
+#include "./Setting.hpp"
+#include "./NetworkManager.hpp"
+#include "./ThreadPool.hpp"
 
 class ProxyServer : public NetworkManager{
 private:

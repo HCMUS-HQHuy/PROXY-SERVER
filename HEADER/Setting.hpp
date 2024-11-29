@@ -1,5 +1,5 @@
-#ifndef SETTING_H
-#define SETTING_H
+#ifndef SETTING_HPP
+#define SETTING_HPP
 
 #include <iostream>
 #include <string>

@@ -1,8 +1,8 @@
-#ifndef RESPONSE
-#define RESPONSE
+#ifndef RESPONSE_HPP
+#define RESPONSE_HPP
 
-#include "./Setting.h"
-#include "./HttpHandler.h"
+#include "./Setting.hpp"
+#include "./HttpHandler.hpp"
 
 class ResponseHandler : public HttpHandler{
 private:

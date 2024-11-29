@@ -1,4 +1,4 @@
-#include "./../../HEADER/NetworkManager.h"
+#include "./../../HEADER/NetworkManager.hpp"
 #include <iphlpapi.h>
 
 NetworkManager::NetworkManager() {

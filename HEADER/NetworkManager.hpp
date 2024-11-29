@@ -1,7 +1,7 @@
-#ifndef NETWORKMANAGER_H
-#define NETWORKMANAGER_H
+#ifndef NETWORKMANAGER_HPP
+#define NETWORKMANAGER_HPP
 
-#include "./Setting.h"
+#include "./Setting.hpp"
 
 class NetworkManager {
 private:
