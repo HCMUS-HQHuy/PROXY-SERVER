@@ -25,7 +25,6 @@ void ProxyServer::start() {
             // h.handleRequest();
         }
     }
-
 }
 
 void ProxyServer::stop() {

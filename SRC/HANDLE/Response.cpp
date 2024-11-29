@@ -6,12 +6,12 @@ ResponseHandler::ResponseHandler(SocketHandler* _socketHandler){
 }
 
 bool ResponseHandler::handleResponse() {
+    // std::cerr << "IN RESPONSE\n";
     while (isEndMessage() == false) {
-        std::cerr << "IN RESPONSE\n";
         int bytesReceived = receiveMessage(server);
         // std::cerr << "byteReceived: " << bytesReceived << "->" << isEndMessage() << "\n";
         int bytesSent = sendMessage(browser, bytesReceived);
     }
-    std::cerr << "ENDDDDD\n";
+    // std::cerr << "END RESPONSE\n";
     return true;
 }

@@ -4,4 +4,7 @@ BIN
 .vscode
 tmp.cpp
 CERTIFICATE/GENERATED
-log.txt
+tmp.txt
+FIND.txt
+note.txt
+CONFIG

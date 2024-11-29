@@ -58,6 +58,7 @@ int HttpHandler::receiveMessage(Socket id, int size) {
         return bytesReceived;
     }
     if (protocol == HTTPS) handleMessage(bytesReceived);
+    else onFlagEnd();
     return bytesReceived;
 }
 

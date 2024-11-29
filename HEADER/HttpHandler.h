@@ -39,10 +39,6 @@ public:
     int sendMessage(Socket id, int size = BUFFER_SIZE);
     int receiveMessage(Socket id, int size = BUFFER_SIZE);
     bool isEndMessage();
-    bool isEndConnect() { 
-        if (!headersParsed) return false;
-        return header.find("Connection: keep-alive") == std::string::npos; 
-    }
 };
 
 #endif

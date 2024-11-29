@@ -16,10 +16,8 @@ const int HTTPS_PORT = 443;
 
 bool parseHostAndPort(std::string request, std::string& hostname, int& port) {
 
-    // Xác định giao thức dựa trên dòng đầu tiên
     port = (request.find("CONNECT") == 0 ? HTTPS_PORT : HTTP_PORT);
 
-    // Tìm vị trí của header "Host: "
     size_t hostPos = request.find("Host: ");
     if (hostPos == std::string::npos) {
         std::cerr << "Host header not found in request." << std::endl;
@@ -95,12 +93,9 @@ ASN1_INTEGER* generateSerialNumber() {
     return serial;
 }
 
-std::vector<std::string> generateSANs(const std::string& host) {
+X509_EXTENSION* addSAN(const std::string& host) {
     std::vector<std::string> sanList;
-
-    // Thêm host chính
     sanList.push_back(host);
-
     // Nếu host bắt đầu bằng "www.", thêm phiên bản không "www."
     if (host.find("www.") == 0) {
         sanList.push_back(host.substr(4)); // Loại bỏ "www."
@@ -109,21 +104,6 @@ std::vector<std::string> generateSANs(const std::string& host) {
         sanList.push_back("www." + host);
     }
 
-    // Thêm các subdomain phổ biến
-    // const std::vector<std::string> commonSubdomains = {"api", "cdn", "mail"};
-    // for (const auto& subdomain : commonSubdomains) {
-    //     size_t pos = host.find(".");
-    //     if (pos != std::string::npos) {
-    //         std::string baseDomain = host.substr(pos + 1);
-    //         sanList.push_back(subdomain + "." + baseDomain);
-    //     }
-    // }
-
-    return sanList;
-}
-
-X509_EXTENSION* addSAN(const std::string& host) {
-    std::vector<std::string> sanList = generateSANs(host);
     std::string sanEntry = "";
     for (size_t i = 0; i < sanList.size(); ++i) {
         if (i > 0) {
@@ -251,15 +231,9 @@ SocketHandler::SocketHandler(SOCKET fromBrowser) {
     socketID[browser] = fromBrowser;
     protocol = HTTP;
     socketID[server] = connectToServer();
-    if (protocol == HTTPS) {
-        SSL_library_init();      // Khởi tạo thư viện OpenSSL
-        SSL_load_error_strings(); // Tải chuỗi lỗi của OpenSSL
-        OpenSSL_add_all_algorithms(); // Thêm các thuật toán mã hóa (optional)
-    }
 }
 
 SocketHandler::~SocketHandler() {
-    std::cerr << "IN socketHandler Destructure\n";
     for (int i: {0, 1}) {
         if (protocol == HTTPS) {
             SSL_shutdown(sslID[i]);
@@ -270,23 +244,22 @@ SocketHandler::~SocketHandler() {
         }
         closesocket(socketID[i]); socketID[i] = -1;
     }
-    std::cerr << "END socketHandler Destructure\n";
 }
 
 bool SocketHandler::setSSLContexts() {
     if (protocol == HTTP) return true;
+    SSL_library_init();      // Khởi tạo thư viện OpenSSL
+    SSL_load_error_strings(); // Tải chuỗi lỗi của OpenSSL
+    OpenSSL_add_all_algorithms(); // Thêm các thuật toán mã hóa (optional)
     if (setSSLbrowser() == false) return false;
     if (setSSLserver() == false) return false;
     return true;
 }
 
 bool SocketHandler::setSSLbrowser() {
-
     std::string directoryName = "./CERTIFICATE/GENERATED";
 
-    // Check if the directory exists
     if (GetFileAttributesA(directoryName.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        // Create the directory
         if (CreateDirectoryA(directoryName.c_str(), NULL)) {
             std::cout << "Directory '" << directoryName << "' created successfully.\n";
         } else {
@@ -304,6 +277,7 @@ bool SocketHandler::setSSLbrowser() {
         std::cerr << "Failed to generate certificate.\n";
         return false;
     }
+
     ctxID[browser] = createSSLContext(outputCertPath.c_str(), outputKeyPath.c_str());
     if (!ctxID[browser]) return false;
 
@@ -323,21 +297,63 @@ bool SocketHandler::setSSLbrowser() {
     return true;
 }
 
+// bool SocketHandler::setSSLserver() {
+//     ctxID[server] = SSL_CTX_new(TLS_client_method());
+//     if (!ctxID[server]) {
+//         std::cerr << "CANNOT create SSL for server.\n";
+//         return false;
+//     }
+    
+//     sslID[server] = SSL_new(ctxID[server]);
+//     SSL_set_fd(sslID[server], socketID[server]);
+//     if (SSL_connect(sslID[server]) <= 0) {
+//         int err = SSL_get_error(sslID[server], -1);
+//         std::cerr << "SSL_connect failed with error code: " << err << '\n';
+//         ERR_print_errors_fp(stderr);
+//         return false;
+//     }
+//     return true;
+// }
+
 bool SocketHandler::setSSLserver() {
+    // Tạo SSL_CTX mới cho kết nối đến server
     ctxID[server] = SSL_CTX_new(TLS_client_method());
     if (!ctxID[server]) {
         std::cerr << "CANNOT create SSL for server.\n";
         return false;
     }
     
+    // Tạo đối tượng SSL từ SSL_CTX
     sslID[server] = SSL_new(ctxID[server]);
+    if (!sslID[server]) {
+        std::cerr << "CANNOT create SSL object.\n";
+        SSL_CTX_free(ctxID[server]);
+        return false;
+    }
+
+    // Gắn socket vào SSL
     SSL_set_fd(sslID[server], socketID[server]);
+
+    // Thiết lập SNI (Server Name Indication)
+    if (!SSL_set_tlsext_host_name(sslID[server], host.c_str())) {
+        std::cerr << "Failed to set SNI (Server Name Indication).\n";
+        SSL_free(sslID[server]);
+        SSL_CTX_free(ctxID[server]);
+        return false;
+    }
+
+    // Thực hiện kết nối SSL
     if (SSL_connect(sslID[server]) <= 0) {
         int err = SSL_get_error(sslID[server], -1);
         std::cerr << "SSL_connect failed with error code: " << err << '\n';
         ERR_print_errors_fp(stderr);
+
+        SSL_free(sslID[server]);
+        SSL_CTX_free(ctxID[server]);
         return false;
     }
+
+    std::cout << "SSL connection to " << host << " established successfully.\n";
     return true;
 }
 

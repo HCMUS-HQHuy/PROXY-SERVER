@@ -5,15 +5,11 @@
 
 ClientHandler::ClientHandler(SOCKET sock) {
     // std::cerr << "Create new client Handler\n";
-    // activeThreads++;
-    // std::cout << "Thread started. Active threads: " << activeThreads.load() << std::endl;
     socketHandler = new SocketHandler(sock);
 }
 
 ClientHandler::~ClientHandler() {
     delete socketHandler;
-    // activeThreads--;
-    // std::cout << "Thread finished. Active threads: " << activeThreads.load() << std::endl;
     // std::cerr << "Destructure client Handler\n";
 }
 
@@ -34,13 +30,6 @@ void ClientHandler::handleRequest() {
     // int STEP = 0;
     while (true) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
-
-        for (int t = 0; t < 2; ++t)
-            if (fds[t].revents & (POLLERR | POLLHUP)) {
-                std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
-                return;
-            }
-
         if (ret < 0) {
             std::cerr << "WSAPoll ERROR!\n";
             break;
@@ -56,11 +45,13 @@ void ClientHandler::handleRequest() {
             // std::cerr <<"NO activity IN " << idleDuration << '\n';
             continue;
         }
-        // bool ok = false;
-        // if (!ok) {
-        //     std::cerr << "NO SOCKET!!\n";
-        //     break;
-        // }
+        
+        for (int t = 0; t < 2; ++t)
+            if (fds[t].revents & (POLLERR | POLLHUP)) {
+                std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
+                return;
+            }
+
         lastActivity = std::chrono::steady_clock::now();
 
         if (fds[0].revents & POLLIN) {
