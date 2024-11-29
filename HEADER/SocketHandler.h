@@ -11,13 +11,10 @@ enum Socket {browser, server};
 class SocketHandler {
     
 private:
-    std::string host;
-
     SSL_CTX* ctxID[2];
 
-    SOCKET connectToServer();
-    bool setSSLbrowser();
-    bool setSSLserver();
+    bool setSSLbrowser(const std::string& host);
+    bool setSSLserver(const std::string& host);
     
 public:
     Protocol protocol;
@@ -26,9 +23,9 @@ public:
 
     SSL* sslID[2];
 
-    SocketHandler(SOCKET browser);
+    SocketHandler(SOCKET browser, SOCKET remote, bool isHTTPS);
     ~SocketHandler();
-    bool setSSLContexts();
+    bool setSSLContexts(const std::string& host);
     bool isValid();
 };
 

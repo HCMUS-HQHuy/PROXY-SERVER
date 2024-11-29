@@ -15,7 +15,7 @@ bool RequestHandler::handleRequest() {
         int bytesReceived = receiveMessage(browser);
         // std::cerr << "RECEIVED : " << bytesReceived << '\n';
         // printHeader();
-        int bytesSent = sendMessage(server, bytesReceived);
+        sendMessage(server, bytesReceived);
     }
     // printHeader();
     return true;

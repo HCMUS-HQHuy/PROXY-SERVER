@@ -1,74 +1,11 @@
 #include "./../../HEADER/SocketHandler.h"
 #include <iostream>
 #include <string>
-#include <map>
-#include <algorithm>
 #include <vector>
-#include <sstream>
-#include <unordered_map>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/rand.h>
 #include <openssl/applink.c>
-
-const int HTTP_PORT = 80;
-const int HTTPS_PORT = 443;
-
-bool parseHostAndPort(std::string request, std::string& hostname, int& port) {
-
-    port = (request.find("CONNECT") == 0 ? HTTPS_PORT : HTTP_PORT);
-
-    size_t hostPos = request.find("Host: ");
-    if (hostPos == std::string::npos) {
-        std::cerr << "Host header not found in request." << std::endl;
-        return false;
-    }
-
-    // Lấy nội dung sau "Host: "
-    size_t hostStart = hostPos + 6;  // Độ dài của "Host: "
-    size_t hostEnd = request.find('\r', hostStart);
-    if (hostEnd == std::string::npos) {
-        hostEnd = request.find('\n', hostStart); // Trong trường hợp không có '\r'
-    }
-    if (hostEnd == std::string::npos) {
-        std::cerr << "Host header is malformed." << std::endl;
-        return false;
-    }
-
-    std::string domain = request.substr(hostStart, hostEnd - hostStart);
-    domain.erase(std::remove_if(domain.begin(), domain.end(), ::isspace), domain.end()); // Xóa khoảng trắng
-
-    // Kiểm tra xem có chứa port hay không
-    size_t colonPos = domain.find(':');
-    if (colonPos != std::string::npos) {
-        // Lấy hostname và port từ domain
-        hostname = domain.substr(0, colonPos);
-        try {
-            port = std::stoi(domain.substr(colonPos + 1));
-        } catch (const std::invalid_argument&) {
-            std::cerr << "Invalid port number." << std::endl;
-            return false;
-        } catch (const std::out_of_range&) {
-            std::cerr << "Port number out of range." << std::endl;
-            return false;
-        }
-    } else {
-        // Không có port, sử dụng port mặc định
-        hostname = domain;
-    }
-
-    // Loại bỏ các ký tự không hợp lệ ở cuối hostname (nếu có)
-    while (!hostname.empty() && !std::isalnum(hostname.back())) {
-        hostname.pop_back();
-    }
-
-    if (hostname.empty()) {
-        std::cerr << "Host not found in request." << std::endl;
-        return false;
-    }
-
-    return true;
-}
 
 // Hàm tạo serial number ngẫu nhiên để tránh bị trùng lặp
 ASN1_INTEGER* generateSerialNumber() {
@@ -225,12 +162,12 @@ SSL_CTX* createSSLContext(const char* certFile, const char* keyFile) {
     return ctx;
 }
 
-SocketHandler::SocketHandler(SOCKET fromBrowser) {
+SocketHandler::SocketHandler(SOCKET fromBrowser, SOCKET fromRemote, bool isHTTPS) {
     sslID[browser] = sslID[server] = nullptr;
     ctxID[browser] = ctxID[server] = nullptr; // Cần giải thích vì sao nêu không có cái này thì việc giải phóng gặp lỗi.
     socketID[browser] = fromBrowser;
-    protocol = HTTP;
-    socketID[server] = connectToServer();
+    socketID[server] = fromRemote;
+    protocol = (isHTTPS ? HTTPS : HTTP);
 }
 
 SocketHandler::~SocketHandler() {
@@ -246,17 +183,17 @@ SocketHandler::~SocketHandler() {
     }
 }
 
-bool SocketHandler::setSSLContexts() {
+bool SocketHandler::setSSLContexts(const std::string &host) {
     if (protocol == HTTP) return true;
     SSL_library_init();      // Khởi tạo thư viện OpenSSL
     SSL_load_error_strings(); // Tải chuỗi lỗi của OpenSSL
     OpenSSL_add_all_algorithms(); // Thêm các thuật toán mã hóa (optional)
-    if (setSSLbrowser() == false) return false;
-    if (setSSLserver() == false) return false;
+    if (setSSLbrowser(host) == false) return false;
+    if (setSSLserver(host) == false) return false;
     return true;
 }
 
-bool SocketHandler::setSSLbrowser() {
+bool SocketHandler::setSSLbrowser(const std::string& host) {
     std::string directoryName = "./CERTIFICATE/GENERATED";
 
     if (GetFileAttributesA(directoryName.c_str()) == INVALID_FILE_ATTRIBUTES) {
@@ -297,25 +234,7 @@ bool SocketHandler::setSSLbrowser() {
     return true;
 }
 
-// bool SocketHandler::setSSLserver() {
-//     ctxID[server] = SSL_CTX_new(TLS_client_method());
-//     if (!ctxID[server]) {
-//         std::cerr << "CANNOT create SSL for server.\n";
-//         return false;
-//     }
-    
-//     sslID[server] = SSL_new(ctxID[server]);
-//     SSL_set_fd(sslID[server], socketID[server]);
-//     if (SSL_connect(sslID[server]) <= 0) {
-//         int err = SSL_get_error(sslID[server], -1);
-//         std::cerr << "SSL_connect failed with error code: " << err << '\n';
-//         ERR_print_errors_fp(stderr);
-//         return false;
-//     }
-//     return true;
-// }
-
-bool SocketHandler::setSSLserver() {
+bool SocketHandler::setSSLserver(const std::string& host) {
     // Tạo SSL_CTX mới cho kết nối đến server
     ctxID[server] = SSL_CTX_new(TLS_client_method());
     if (!ctxID[server]) {
@@ -364,47 +283,3 @@ bool SocketHandler::isValid() {
     }
     return true;
 }
-
-SOCKET SocketHandler::connectToServer() {
-    const int BUFFER_SIZE = 1024;
-    char buffer[BUFFER_SIZE]; int bytesRecv = recv(socketID[browser], buffer, BUFFER_SIZE, 0);
-
-    int port; 
-    parseHostAndPort(std::string(buffer, bytesRecv), host, port);
-    hostent* hostInfo = gethostbyname(host.c_str());
-    if (hostInfo == nullptr) {
-        std::cerr << "Failed to resolve host name." << std::endl;
-        return SOCKET_ERROR;
-    }
-    // Create a socket to listen for client connections
-    SOCKET remoteSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (remoteSocket == INVALID_SOCKET) {
-        std::cerr << "Error creating socket." << std::endl;
-        return SOCKET_ERROR;
-    }
-
-    // Set the remote server address
-    sockaddr_in remoteAddr;
-    remoteAddr.sin_family = AF_INET;
-    remoteAddr.sin_port = htons(port); 
-    remoteAddr.sin_addr.s_addr = *((unsigned long*)hostInfo->h_addr_list[0]);
-
-    // Connect to the remote server
-    if (connect(remoteSocket, (sockaddr*)&remoteAddr, sizeof(remoteAddr)) == SOCKET_ERROR) {
-        std::cerr << "Error connecting to remote server." << std::endl;
-        closesocket(remoteSocket);
-        return SOCKET_ERROR;
-    }
-    std::cout << "HOST: " << host << " " << port << '\n';
-    std::cerr << "HOST: " << host << " " << port << '\n';
-    if (port == HTTPS_PORT) {
-        const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
-        int byteSent = send(socketID[browser], response, strlen(response), 0);
-        if (byteSent != strlen(response)) {
-            closesocket(remoteSocket);
-            return SOCKET_ERROR;
-        }
-        protocol = HTTPS;
-    } 
-    return remoteSocket;
-} 
