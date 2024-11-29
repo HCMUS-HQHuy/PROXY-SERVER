@@ -37,6 +37,7 @@ void ProxyServer::waitingClient() {
         return;
     }
     std::cout << "Server is listenning on IPv4: " << IPv4 << " PORT: " <<  port << "...\n";
+    std::cout << "(local) use loopback IPaddress : 127.0.0.1 PORT: " <<  port << "...\n";
 }
 
 SOCKET ProxyServer::acceptClient() {
