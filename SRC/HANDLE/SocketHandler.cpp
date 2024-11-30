@@ -146,7 +146,7 @@ bool generateCertificate(const std::string& host,
     EVP_PKEY_free(rootKey);
     X509_free(rootCert);
 
-    std::cout << "Certificate generated successfully for " << host << ".\n";
+    // std::cout << "Certificate generated successfully for " << host << ".\n";
     return true;
 }
 
@@ -272,7 +272,7 @@ bool SocketHandler::setSSLserver(const std::string& host) {
         return false;
     }
 
-    std::cout << "SSL connection to " << host << " established successfully.\n";
+    // std::cout << "SSL connection to " << host << " established successfully.\n";
     return true;
 }
 

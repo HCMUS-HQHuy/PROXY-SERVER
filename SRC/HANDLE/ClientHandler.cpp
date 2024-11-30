@@ -1,32 +1,28 @@
 #include <chrono>
-#include <algorithm>
 
 #include "./../../HEADER/ClientHandler.hpp"
 #include "./../../HEADER/BlackList.hpp"
 
 bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname, int& port) {
-    std::cerr << request << '\n';
+    if (request.find("\r\n\r\n") == std::string::npos) {
+        std::cerr << "MISSING HEADER HTTP DATA.\n";
+        std::cerr << request << '\n';
+        return false;
+    }
+
     port = (request.find("CONNECT") == 0 ? HTTPS_PORT : HTTP_PORT);
 
     size_t hostPos = request.find("Host: ");
     if (hostPos == std::string::npos) {
-        std::cerr << "Host header not found in request." << std::endl;
+        std::cerr << "HOST HEADER NOT FOUND IN REQUEST.\n";
         return false;
     }
 
-    size_t hostStart = hostPos + 6;
-    size_t hostEnd = request.find('\r', hostStart);
-    if (hostEnd == std::string::npos) {
-        hostEnd = request.find('\n', hostStart); // Trong trường hợp không có '\r'
-    }
-    if (hostEnd == std::string::npos) {
-        std::cerr << "Host header is malformed." << std::endl;
-        return false;
-    }
+    size_t hostStart = hostPos + 6; while (isspace(request[hostStart])) hostStart++;
+    size_t hostEnd = request.find("\r\n", hostStart);
 
     std::string domain = request.substr(hostStart, hostEnd - hostStart);
-    domain.erase(std::remove_if(domain.begin(), domain.end(), ::isspace), domain.end()); // Xóa khoảng trắng
-
+    while (!domain.empty() && isspace(domain.back())) domain.pop_back();
     // Kiểm tra xem có chứa port hay không
     size_t colonPos = domain.find(':');
     if (colonPos != std::string::npos) {
@@ -35,10 +31,10 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
         try {
             port = std::stoi(domain.substr(colonPos + 1));
         } catch (const std::invalid_argument&) {
-            std::cerr << "Invalid port number." << std::endl;
+            std::cerr << "INVALID PORT NUMBER." << std::endl;
             return false;
         } catch (const std::out_of_range&) {
-            std::cerr << "Port number out of range." << std::endl;
+            std::cerr << "PORT NUMBER OUT OF RANGE." << std::endl;
             return false;
         }
     } else {
@@ -52,7 +48,7 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
     }
 
     if (hostname.empty()) {
-        std::cerr << "Host not found in request." << std::endl;
+        std::cerr << "HOST NOT FOUND IN REQUEST.\n";
         return false;
     }
 

@@ -93,7 +93,6 @@ void HttpHandler::handleMessage(int bytesReceived) {
             }
         }
         if (size(chunkBuffer) == 0) return;
-        // else debugerString("HEADER REMAIN IN CHUNK BUFFER", chunkBuffer);
     } 
 
     if (isChunked) {
