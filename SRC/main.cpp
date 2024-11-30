@@ -1,6 +1,8 @@
 #include "./../HEADER/Setting.hpp"
 #include "./../HEADER/ProxyServer.hpp"
 
+#include <fstream>
+
 int main() {
     ProxyServer proxyServer(LOCAL_PORT);
     proxyServer.start();

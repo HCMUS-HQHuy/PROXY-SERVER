@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include "./../../HEADER/ClientHandler.hpp"
+#include "./../../HEADER/BlackList.hpp"
 
 bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname, int& port) {
     std::cerr << request << '\n';
@@ -65,13 +66,16 @@ ClientHandler::ClientHandler(SOCKET sock) {
 
     SOCKET remote = SOCKET_ERROR;
     if (parseHostAndPort(std::string(buffer, bytesRecv), host, port)) {
-        remote = connectToServer();
-        if (port == HTTPS_PORT) {
-            const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
-            size_t byteSent = send(sock, response, strlen(response), 0);
-            if (byteSent != strlen(response)) {
-                closesocket(remote);
-                remote = SOCKET_ERROR;
+        if (blackList.isMember(host)) host = "example.com";
+        else {
+            remote = connectToServer();
+            if (port == HTTPS_PORT) {
+                const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
+                size_t byteSent = send(sock, response, strlen(response), 0);
+                if (byteSent != strlen(response)) {
+                    closesocket(remote);
+                    remote = SOCKET_ERROR;
+                }
             }
         }
     }
@@ -81,7 +85,6 @@ ClientHandler::ClientHandler(SOCKET sock) {
 
 ClientHandler::~ClientHandler() {
     delete socketHandler;
-    // std::cerr << "Destructure client Handler\n";
 }
 
 SOCKET ClientHandler::connectToServer() {
@@ -126,7 +129,7 @@ void ClientHandler::handleRequest() {
     #define MAX_IDLE_TIME 5000
 
     auto lastActivity = std::chrono::steady_clock::now();
-    // int STEP = 0;
+
     while (true) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
         if (ret < 0) {
@@ -141,7 +144,6 @@ void ClientHandler::handleRequest() {
                 std::cerr << "TIMEOUT\n";
                 break;
             }
-            // std::cerr <<"NO activity IN " << idleDuration << '\n';
             continue;
         }
         

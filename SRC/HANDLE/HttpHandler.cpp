@@ -84,8 +84,7 @@ void HttpHandler::handleMessage(int bytesReceived) {
                 // debugerString("BODY REMAIN: ", body);
                 // std::cout << "CURRENT: " << sz(body) << "/" << contentLength << '\n';
                 if (sz(body) >= contentLength) onFlagEnd();
-            } else {
-                // std::cout << "DON'T HAVE CONTENT LENGTH\n"; 
+            } else { 
                 if (header.find("Transfer-Encoding: chunked") != std::string::npos) {
                     isChunked = true;
                     chunkBuffer = body;

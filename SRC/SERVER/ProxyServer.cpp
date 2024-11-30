@@ -1,6 +1,8 @@
 #include "./../../HEADER/ProxyServer.hpp"
 #include "./../../HEADER/ClientHandler.hpp"
 
+#include <fstream>
+
 ProxyServer::ProxyServer(int p) {
     port = p;
     sockaddr_in serverAddr;
@@ -17,6 +19,7 @@ ProxyServer::ProxyServer(int p) {
 
 void ProxyServer::start() {
     waitingClient();
+
     while (true) {
         SOCKET client = acceptClient();
         if (client != INVALID_SOCKET) {
