@@ -13,9 +13,9 @@ void debugerString(const string &name, const string &buffer) {
 HttpHandler::HttpHandler() { 
     buffer = new char[BUFFER_SIZE]();
     flagEndMessage = false; contentLength = -1;
-    chunkEnd = 0;
+    curChunkID = chunkEnd = 0;
     isChunked = headersParsed = false;
-    header.clear(); chunkBuffer.clear(); body.clear();
+    header.clear(); body.clear();
     STEP = 0;
 }
 
@@ -40,7 +40,7 @@ int HttpHandler::sendMessage(Socket id, int sizeSending) {
 }
 
 int HttpHandler::receiveMessage(Socket id, int size) {
-    // std::cerr << "STEP: " << ++STEP << '\n';
+    STEP++;
     int bytesReceived = 0; 
     Protocol protocol = socketHandler->protocol;
     if (protocol == HTTP) {
@@ -73,84 +73,66 @@ void HttpHandler::handleMessage(int bytesReceived) {
 
             body = header.substr(headerEnd);
             header = header.substr(0, headerEnd);
-            // debugerString("HEADER IN HANDLERMESAAGE", header);
-            size_t contentLengthPos = header.find("content-length: ");
-            if (contentLengthPos == std::string::npos) contentLengthPos=header.find("Content-Length: ");
-            if (contentLengthPos == std::string::npos) contentLengthPos=header.find("CONTENT-LENGTH: ");
+
+            auto findContentLength = [&]() {
+                const std::string patterns[] = {"content-length: ", "Content-Length: ", "CONTENT-LENGTH: "};
+                for (const auto& pattern : patterns) {
+                    size_t pos = header.find(pattern);
+                    if (pos != std::string::npos) {
+                        return pos;
+                    }
+                }
+                return std::string::npos; // Không tìm thấy
+            };
+
+            size_t contentLengthPos = findContentLength();
             if (contentLengthPos != std::string::npos) {
                 int p = contentLengthPos + string("content-length: ").size();
                 contentLength = 0;
                 while (isdigit(header[p])) contentLength = contentLength * 10 + (header[p] - '0'), p++;
-                // debugerString("BODY REMAIN: ", body);
-                // std::cout << "CURRENT: " << sz(body) << "/" << contentLength << '\n';
                 if (sz(body) >= contentLength) onFlagEnd();
             } else { 
                 if (header.find("Transfer-Encoding: chunked") != std::string::npos) {
                     isChunked = true;
-                    chunkBuffer = body;
                 }
                 else onFlagEnd();
             }
         }
-        if (size(chunkBuffer) == 0) return;
-    } 
+    } else body.append(buffer, bytesReceived);
 
     if (isChunked) {
-        // std::cerr << "=> endHeader: " << headersParsed << "->" << sz(body) << '\n';
-        if (body.empty()) { 
-            chunkBuffer.append(buffer, bytesReceived); 
-        }
-        else body.clear();
-        // debugerString("CHECK CHUNKBUFFER", chunkBuffer);
         while (true) {
             if (isEndChunk()) {
-                size_t chunkSizeEnd = chunkBuffer.find("\r\n");
+                size_t chunkSizeEnd = body.find("\r\n", curChunkID);
                 if (chunkSizeEnd == std::string::npos) {
                     // std::cerr << "Chunk size missed data.\n";
-                    return; // Chưa nhận đủ để đọc chunk size
+                    return;
                 } 
-                // else std::cerr << "full!!\n";
-                // size_t chunkStart = chunkSizeEnd + 2; // Vị trí sau "\r\n"
-    
-                std::string chunkSizeHex = chunkBuffer.substr(0, chunkSizeEnd);
+
+                std::string chunkSizeHex = body.substr(curChunkID, chunkSizeEnd - curChunkID);
                 // std::cerr << "CHUNK HEX: " << chunkSizeHex << '\n';
                 int chunkSize = std::stoi(chunkSizeHex, nullptr, 16);
                 // std::cerr << "Chunk size (hex): " << chunkSizeHex << ", (int): " << chunkSize << "\n";
                 // Xử lý chunk cuối cùng
                 if (chunkSize == 0) {
-                    // size_t trailerStart = chunkSizeEnd + 2; // Vị trí sau "\r\n"
-                    // size_t trailerEnd = chunkBuffer.find("\r\n\r\n", trailerStart);
-                    // if (trailerEnd == std::string::npos) {
-                    //     std::cerr << "Trailer chưa đủ, chờ thêm dữ liệu.\n";
-                    //     return; // Chờ thêm dữ liệu cho trailer
-                    // }
-
-                    // Gọi hàm xử lý hoàn thành và xóa trailer khỏi buffer
                     onFlagEnd();
-                    // std::cerr << "End chunked transfer (have trailer).\n";
-                    // chunkBuffer.erase(0, trailerEnd + 4);
                     return;
                 }
                 chunkEnd = chunkSizeEnd + 2 + chunkSize;
             }
-                // Kiểm tra đủ dữ liệu cho chunk
-            if (chunkBuffer.size() < chunkEnd + 2) { // +2 cho "\r\n" sau chunk
+            if (body.size() < chunkEnd + 2) { // +2 cho "\r\n" sau chunk
                 // std::cerr << "Chunk is not full, waitting...\n";
                 return;
             }
-            // std::string chunkData = chunkBuffer.substr(chunkStart, chunkSize);
-            chunkBuffer.erase(0, chunkEnd + 2); // Xóa chunk + "\r\n"
-            chunkEnd = 0;
+            curChunkID = chunkEnd + 2;
         }
-        return;
     }
-
-    body.append(buffer, bytesReceived);
-    // std::cerr << "body size: " << sz(body) << "/" << contentLength << '\n';
-    if (contentLength >= 0 && sz(body) >= contentLength) {
-        std::cerr << "received: " << sz(body) << "/" << contentLength << '\n';
-        onFlagEnd();
-        return;
+    else {
+        if (contentLength >= 0 && sz(body) >= contentLength) {
+            std::cerr << "received: " << sz(body) << "/" << contentLength << '\n';
+            onFlagEnd();
+            return;
+        }
     }
     // std::cerr << "HANDLER STEP END AFTER ADD INTO BODY: " << STEP << '\n';
 }

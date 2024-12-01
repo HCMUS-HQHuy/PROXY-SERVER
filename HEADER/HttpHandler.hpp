@@ -12,14 +12,13 @@ private:
     string header; 
     string body;
 
-    string chunkBuffer;
-    size_t chunkEnd;
+    size_t curChunkID, chunkEnd;
 
     char *buffer;
 
     bool flagEndMessage;
     int contentLength;
-    int isChunked;
+    bool isChunked;
     bool headersParsed;
 
     int STEP;
@@ -28,7 +27,7 @@ private:
     void onFlagEnd() {flagEndMessage = true;}
     void offFlagEnd() { flagEndMessage = false; }
     
-    bool isEndChunk() { return chunkEnd == 0; }
+    bool isEndChunk() { return chunkEnd <= curChunkID; }
 
 protected: 
     SocketHandler* socketHandler;

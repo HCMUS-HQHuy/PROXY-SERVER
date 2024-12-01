@@ -23,9 +23,9 @@ void ProxyServer::start() {
     while (true) {
         SOCKET client = acceptClient();
         if (client != INVALID_SOCKET) {
-            // requestHandlerPool.enqueue(std::make_shared<ClientHandler>(client));
-            ClientHandler h(client);
-            h.handleRequest();
+            requestHandlerPool.enqueue(std::make_shared<ClientHandler>(client));
+            // ClientHandler h(client);
+            // h.handleRequest();
         }
     }
 }
