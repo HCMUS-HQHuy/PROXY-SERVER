@@ -21,8 +21,6 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                 // Nếu có task, xử lý
                 if (task) {
                     try {
-                        
-                        task->~ClientHandler();
                         task->handleRequest();
                     } catch (const std::exception& e) {
                         std::cerr << "Exception in task: " << e.what() << std::endl;
