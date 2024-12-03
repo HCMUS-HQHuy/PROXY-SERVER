@@ -1,6 +1,6 @@
 #include "./../../HEADER/ThreadPool.hpp"
 
-ThreadPool requestHandlerPool(std::thread::hardware_concurrency() * 80);
+ThreadPool requestHandlerPool(std::thread::hardware_concurrency() * 30);
 // ThreadPool requestHandlerPool(1);
 // Khởi tạo pool với số luồng cố định
 ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
@@ -15,7 +15,9 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                     task = std::move(this->tasks.front());
                     this->tasks.pop();
                 }
+                ++activeThreads;
                 task->handleRequest();
+                activeThreads--;
             }
         });
     }
