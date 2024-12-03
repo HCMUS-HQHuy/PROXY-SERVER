@@ -154,7 +154,7 @@ void ClientHandler::handleRequest() {
             const auto& currentTime = std::chrono::steady_clock::now();
             const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count(); 
             if (idleDuration > MAX_IDLE_TIME) {
-                std::cerr << "TIMEOUT\n";
+                // std::cerr << "TIMEOUT\n";
                 break;
             }
             continue;
