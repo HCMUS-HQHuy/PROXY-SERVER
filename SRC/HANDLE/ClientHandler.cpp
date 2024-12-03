@@ -30,7 +30,6 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
     size_t colonPos = domain.find(':');
     if (colonPos != std::string::npos) {
         // Lấy hostname và port từ domain
-        hostname = domain.substr(0, colonPos);
         try {
             port = std::stoi(domain.substr(colonPos + 1));
         } catch (const std::invalid_argument&) {
@@ -40,9 +39,11 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
             std::cerr << "PORT NUMBER OUT OF RANGE." << std::endl;
             return false;
         }
+        hostname = domain.substr(0, colonPos);
     } else {
         // Không có port, sử dụng port mặc định
         hostname = domain;
+        port = HTTP;
     }
 
     // Loại bỏ các ký tự không hợp lệ ở cuối hostname (nếu có)
@@ -62,32 +63,43 @@ ClientHandler::ClientHandler(SOCKET sock) {
     // std::cerr << "Create new client Handler\n";
     char buffer[BUFFER_SIZE]; 
     int bytesRecv = recv(sock, buffer, BUFFER_SIZE, 0);
+    host = ""; port = -1;
+    parseHostAndPort(std::string(buffer, bytesRecv), host, port);
+    socketHandler = nullptr;
+}
 
+bool ClientHandler::connectToBrowser(SOCKET sock) {
     SOCKET remote = SOCKET_ERROR;
-    if (parseHostAndPort(std::string(buffer, bytesRecv), host, port)) {
-        if (blackList.isMember(host)) {
-            std::cerr << host << "-->Blocked!\n";
-            host = "";
+    if (blackList.isMember(host)) {
+        std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
+        const char* response = "HTTP/1.1 403 Forbidden\r\n\r\n";
+        size_t byteSent = send(sock, response, strlen(response), 0);
+        if (byteSent != strlen(response)) {
+            std::cerr << "Failed to send response.\n";
         }
-        else {
-            std::cerr << host << "-->Allowed.\n";
-            remote = connectToServer();
-            if (port == HTTPS_PORT) {
-                const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
-                size_t byteSent = send(sock, response, strlen(response), 0);
-                if (byteSent != strlen(response)) {
-                    closesocket(remote);
-                    remote = SOCKET_ERROR;
-                }
+        host = "";
+        closesocket(sock);
+        return false;
+    }
+    else {
+        std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
+        remote = connectToServer();
+        if (port == HTTPS_PORT) {
+            const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
+            size_t byteSent = send(sock, response, strlen(response), 0);
+            if (byteSent != strlen(response)) {
+                closesocket(remote);
+                remote = SOCKET_ERROR;
             }
         }
     }
-
     socketHandler = new SocketHandler(sock, remote, port==HTTPS_PORT);
+    return true;
 }
 
 ClientHandler::~ClientHandler() {
-    delete socketHandler;
+    if (socketHandler != nullptr) 
+        delete socketHandler;
 }
 
 SOCKET ClientHandler::connectToServer() {
@@ -114,7 +126,6 @@ SOCKET ClientHandler::connectToServer() {
         closesocket(remoteSocket);
         return SOCKET_ERROR;
     }
-    std::cout << "HOST: " << host << " " << port << '\n';
     return remoteSocket;
 } 
 
@@ -138,7 +149,7 @@ void ClientHandler::handleRequest() {
         if (ret < 0) {
             std::cerr << "WSAPoll ERROR!\n";
             break;
-        } 
+        }
         else if (ret == 0) {
             // Kiểm tra idle timeout
             const auto& currentTime = std::chrono::steady_clock::now();

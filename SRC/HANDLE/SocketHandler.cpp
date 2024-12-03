@@ -246,7 +246,6 @@ bool SocketHandler::setSSLserver(const std::string& host) {
     sslID[server] = SSL_new(ctxID[server]);
     if (!sslID[server]) {
         std::cerr << "CANNOT create SSL object.\n";
-        SSL_CTX_free(ctxID[server]);
         return false;
     }
 
@@ -256,8 +255,6 @@ bool SocketHandler::setSSLserver(const std::string& host) {
     // Thiết lập SNI (Server Name Indication)
     if (!SSL_set_tlsext_host_name(sslID[server], host.c_str())) {
         std::cerr << "Failed to set SNI (Server Name Indication).\n";
-        SSL_free(sslID[server]);
-        SSL_CTX_free(ctxID[server]);
         return false;
     }
 
@@ -266,9 +263,6 @@ bool SocketHandler::setSSLserver(const std::string& host) {
         int err = SSL_get_error(sslID[server], -1);
         std::cerr << "SSL_connect failed with error code: " << err << '\n';
         ERR_print_errors_fp(stderr);
-
-        SSL_free(sslID[server]);
-        SSL_CTX_free(ctxID[server]);
         return false;
     }
 

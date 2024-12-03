@@ -24,11 +24,18 @@ void ProxyServer::start() {
     while (ServerRunning) {
         SOCKET client = acceptClient();
         if (client != INVALID_SOCKET) {
-            // requestHandlerPool.enqueue(std::make_shared<ClientHandler>(client));
-            ClientHandler h(client);
-            h.handleRequest();
+            std::shared_ptr<ClientHandler> h = std::make_shared<ClientHandler>(client);
+            if (h->connectToBrowser(client))
+                requestHandlerPool.enqueue(std::move(h));
+            else {
+                std::cerr << "CANNOT CONNECT TO BROWSER\n";
+            }
+            // ClientHandler h(client);
+            // if (h.connectToBrowser(client)) 
+            //     h.handleRequest();
         }
     }
+    std::cerr << "END!!\n";
 }
 
 void ProxyServer::stop(int signum) {

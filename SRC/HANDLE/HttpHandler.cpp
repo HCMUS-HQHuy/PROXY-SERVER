@@ -32,10 +32,8 @@ int HttpHandler::sendMessage(Socket id, int sizeSending) {
         bytesSent = SSL_write(socketHandler->sslID[id], buffer, sizeSending);
     }
     if (bytesSent < 0) std::cerr << "SENDING ERRORS!\n";
-    if (bytesSent == 0) {
-        std::cerr << "CONNECTION CLOSED!\n";
-        onFlagEnd();
-    }
+    if (bytesSent == 0) std::cerr << "CONNECTION CLOSED!\n";
+    if (bytesSent <= 0) onFlagEnd();
     return bytesSent;
 }
 
@@ -48,15 +46,13 @@ int HttpHandler::receiveMessage(Socket id, int size) {
     } else if (protocol == HTTPS) {
         bytesReceived = SSL_read(socketHandler->sslID[id], buffer, size);
     }
-    if (bytesReceived < 0) {
-        std::cerr << "RECEIVING ERRORS!\n";
-        return bytesReceived;
-    }
-    if (bytesReceived == 0) {
-        std::cerr << "CONNECTION CLOSED!\n";
+    if (bytesReceived < 0) std::cerr << "RECEIVING ERRORS!\n";
+    if (bytesReceived == 0) std::cerr << "CONNECTION CLOSED!\n";
+    if (bytesReceived <= 0) {
         onFlagEnd();
         return bytesReceived;
     }
+
     if (protocol == HTTPS) handleMessage(bytesReceived);
     else onFlagEnd(); 
     return bytesReceived;
@@ -91,7 +87,7 @@ void HttpHandler::handleMessage(int bytesReceived) {
                 contentLength = 0;
                 while (isdigit(header[p])) contentLength = contentLength * 10 + (header[p] - '0'), p++;
                 if (sz(body) >= contentLength) onFlagEnd();
-            } else { 
+            } else {
                 if (header.find("Transfer-Encoding: chunked") != std::string::npos) {
                     isChunked = true;
                 }
@@ -101,13 +97,13 @@ void HttpHandler::handleMessage(int bytesReceived) {
     } else body.append(buffer, bytesReceived);
 
     if (isChunked) {
-        while (true) {
+        while (ServerRunning) {
             if (isEndChunk()) {
                 size_t chunkSizeEnd = body.find("\r\n", curChunkID);
                 if (chunkSizeEnd == std::string::npos) {
                     // std::cerr << "Chunk size missed data.\n";
                     return;
-                } 
+                }
 
                 std::string chunkSizeHex = body.substr(curChunkID, chunkSizeEnd - curChunkID);
                 // std::cerr << "CHUNK HEX: " << chunkSizeHex << '\n';
@@ -129,7 +125,7 @@ void HttpHandler::handleMessage(int bytesReceived) {
     }
     else {
         if (contentLength >= 0 && sz(body) >= contentLength) {
-            std::cerr << "received: " << sz(body) << "/" << contentLength << '\n';
+            // std::cerr << "received: " << sz(body) << "/" << contentLength << '\n';
             onFlagEnd();
             return;
         }
