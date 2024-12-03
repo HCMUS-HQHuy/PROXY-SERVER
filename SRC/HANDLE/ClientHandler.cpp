@@ -68,7 +68,7 @@ ClientHandler::ClientHandler(SOCKET sock) {
     socketHandler = nullptr;
 }
 
-bool ClientHandler::connectToBrowser(SOCKET sock) {
+bool ClientHandler::handleConnection(SOCKET sock) {
     SOCKET remote = SOCKET_ERROR;
     if (blackList.isMember(host)) {
         std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
@@ -151,7 +151,6 @@ void ClientHandler::handleRequest() {
             break;
         }
         else if (ret == 0) {
-            // Kiểm tra idle timeout
             const auto& currentTime = std::chrono::steady_clock::now();
             const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count(); 
             if (idleDuration > MAX_IDLE_TIME) {
@@ -170,12 +169,10 @@ void ClientHandler::handleRequest() {
         lastActivity = std::chrono::steady_clock::now();
 
         if (fds[0].revents & POLLIN) {
-            // std::cerr << "IN browser\n";
             RequestHandler request(socketHandler);
             if (request.handleRequest() == false) break;
         }
         if (fds[1].revents & POLLIN) {
-            // std::cerr << "IN server\n";
             ResponseHandler response(socketHandler);
             if (response.handleResponse() == false) break;
         }

@@ -25,7 +25,7 @@ void ProxyServer::start() {
         SOCKET client = acceptClient();
         if (client != INVALID_SOCKET) {
             std::shared_ptr<ClientHandler> h = std::make_shared<ClientHandler>(client);
-            if (h->connectToBrowser(client))
+            if (h->handleConnection(client))
                 requestHandlerPool.enqueue(std::move(h));
             else {
                 std::cerr << "CANNOT CONNECT TO BROWSER\n";

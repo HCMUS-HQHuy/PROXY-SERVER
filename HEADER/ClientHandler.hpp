@@ -14,7 +14,7 @@ private:
 public:
     ClientHandler(SOCKET sock);
     ~ClientHandler();
-    bool connectToBrowser(SOCKET sock);
+    bool handleConnection(SOCKET sock);
     void handleRequest();
     std::string getHost() {return host;}
 };
