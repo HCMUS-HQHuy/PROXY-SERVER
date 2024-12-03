@@ -23,18 +23,18 @@ build: $(OUTPUT)
 $(OUTPUT): $(OBJ_FILES)
 	@echo "Linking objects to executable..."
 	@mkdir -p $(dir $@)
-	$(COMPILER) $(OBJ_FILES) -o $@ $(LIBS)
+	@$(COMPILER) $(OBJ_FILES) -o $@ $(LIBS)
 	@echo "Build completed successfully."
 
 # Compile each .cpp file into .o
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "Compiling $<..."
 	@mkdir -p $(dir $@)
-	$(COMPILER) $(FLAGS) $< -o $@ $(LIBS)
+	@$(COMPILER) $(FLAGS) $< -o $@ $(LIBS)
 
 # Run the program
 run:
-	$(OUTPUT)
+	@$(OUTPUT)
 
 # Clean build files
 clean:
