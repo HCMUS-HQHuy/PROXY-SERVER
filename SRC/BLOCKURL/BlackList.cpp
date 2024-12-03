@@ -21,12 +21,17 @@ BlackList::BlackList(const string &path) {
     }
 
     file.close();
-    // Sort for efficient searching
-    std::sort(URLs.begin(), URLs.end());
     for (auto x: URLs) std::cerr << x << "\n";
 }
 
 bool BlackList::isMember(const string &host) {
-    // Perform a binary search for efficiency
-    return std::binary_search(URLs.begin(), URLs.end(), host);
+    // Duyệt qua từng URL trong danh sách
+    for (const auto &url : URLs) {
+        // Kiểm tra nếu URL là phần cuối của host
+        if (host.length() >= url.length() && 
+            host.compare(host.length() - url.length(), url.length(), url) == 0) {
+            return true; // Host bị chặn
+        }
+    }
+    return false; // Host không bị chặn
 }

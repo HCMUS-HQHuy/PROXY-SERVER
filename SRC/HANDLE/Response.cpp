@@ -7,7 +7,7 @@ ResponseHandler::ResponseHandler(SocketHandler* _socketHandler){
 
 bool ResponseHandler::handleResponse() {
     // std::cerr << "IN RESPONSE\n";
-    while (isEndMessage() == false) {
+    while (ServerRunning && isEndMessage() == false) {
         int bytesReceived = receiveMessage(server);
         // std::cerr << "byteReceived: " << bytesReceived << "->" << isEndMessage() << "\n";
         int bytesSent = sendMessage(browser, bytesReceived);

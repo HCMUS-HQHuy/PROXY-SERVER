@@ -66,11 +66,11 @@ ClientHandler::ClientHandler(SOCKET sock) {
     SOCKET remote = SOCKET_ERROR;
     if (parseHostAndPort(std::string(buffer, bytesRecv), host, port)) {
         if (blackList.isMember(host)) {
+            std::cerr << host << "-->Blocked!\n";
             host = "";
-            std::cerr << "Blocked!\n";
         }
         else {
-            std::cerr << "Allowed.\n";
+            std::cerr << host << "-->Allowed.\n";
             remote = connectToServer();
             if (port == HTTPS_PORT) {
                 const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
@@ -133,7 +133,7 @@ void ClientHandler::handleRequest() {
 
     auto lastActivity = std::chrono::steady_clock::now();
 
-    while (true) {
+    while (ServerRunning) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
         if (ret < 0) {
             std::cerr << "WSAPoll ERROR!\n";

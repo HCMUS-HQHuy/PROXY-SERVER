@@ -12,7 +12,7 @@ private:
 public:
     ProxyServer(int port);
     void start();
-    void stop();
+    static void stop(int signum);
 } ;
 
 #endif

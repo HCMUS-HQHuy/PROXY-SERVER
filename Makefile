@@ -17,6 +17,8 @@ OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRC_FILES))
 # Default rule
 all: $(OUTPUT)
 
+build: $(OUTPUT)
+
 # Link object files into executable
 $(OUTPUT): $(OBJ_FILES)
 	@echo "Linking objects to executable..."
@@ -52,4 +54,4 @@ $(OBJ_DIR)/THREAD/ThreadManager.o: $(HEADER_DIR)/ThreadManager.hpp
 $(OBJ_DIR)/THREAD/ThreadPool.o: $(HEADER_DIR)/ThreadPool.hpp $(HEADER_DIR)/ClientHandler.hpp
 $(OBJ_DIR)/main.o: $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/ProxyServer.hpp
 
-.PHONY: all clean run
+.PHONY: all clean run build

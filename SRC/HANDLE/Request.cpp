@@ -10,7 +10,7 @@ RequestHandler::RequestHandler(SocketHandler* _socketHandler){
 }
 
 bool RequestHandler::handleRequest() {
-    while (isEndMessage() == false) {
+    while (ServerRunning && isEndMessage() == false) {
         // std::cerr << "HERE\n";
         int bytesReceived = receiveMessage(browser);
         // std::cerr << "RECEIVED : " << bytesReceived << '\n';

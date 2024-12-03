@@ -18,20 +18,22 @@ ProxyServer::ProxyServer(int p) {
 }
 
 void ProxyServer::start() {
+    std::signal(SIGINT, stop);
     waitingClient();
 
-    while (true) {
+    while (ServerRunning) {
         SOCKET client = acceptClient();
         if (client != INVALID_SOCKET) {
-            requestHandlerPool.enqueue(std::make_shared<ClientHandler>(client));
-            // ClientHandler h(client);
-            // h.handleRequest();
+            // requestHandlerPool.enqueue(std::make_shared<ClientHandler>(client));
+            ClientHandler h(client);
+            h.handleRequest();
         }
     }
 }
 
-void ProxyServer::stop() {
-    
+void ProxyServer::stop(int signum) {
+    std::cout << "Interrupt signal (" << signum << ") received. Stopping server..." << std::endl;
+    ServerRunning = false; // Dừng server
 }
 
 void ProxyServer::waitingClient() {

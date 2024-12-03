@@ -7,8 +7,11 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
+#include <csignal>
+#include <atomic>
 
 using std::string;
+extern std::atomic<bool> ServerRunning;
 
 #define HTTPS_PORT 443
 #define HTTP_PORT 80
