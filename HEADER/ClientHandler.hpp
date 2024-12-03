@@ -3,9 +3,6 @@
 
 #include "./setting.hpp"
 #include "./SocketHandler.hpp"
-#include "./Request.hpp"
-#include "./Response.hpp"
-#include "./ThreadManager.hpp"
 
 class ClientHandler {
 private:

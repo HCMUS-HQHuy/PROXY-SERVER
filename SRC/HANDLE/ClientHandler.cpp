@@ -1,5 +1,8 @@
 #include <chrono>
 
+#include "./../../HEADER/Request.hpp"
+#include "./../../HEADER/Response.hpp"
+#include "./../../HEADER/ThreadManager.hpp"
 #include "./../../HEADER/ClientHandler.hpp"
 #include "./../../HEADER/BlackList.hpp"
 

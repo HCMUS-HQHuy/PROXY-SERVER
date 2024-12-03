@@ -3,7 +3,6 @@
 
 #include "./Setting.hpp"
 #include "./NetworkManager.hpp"
-#include "./ThreadPool.hpp"
 
 class ProxyServer : public NetworkManager{
 private:
