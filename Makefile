@@ -31,7 +31,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(COMPILER) $(FLAGS) $< -o $@ $(LIBS)
 
 # Run the program
-run: $(OUTPUT)
+run:
 	$(OUTPUT)
 
 # Clean build files
