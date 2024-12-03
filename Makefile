@@ -1,39 +1,55 @@
-# Biến số
+# Variables
 COMPILER = g++
-FLAGS = -c -Wall -Wextra -Wcast-align -Wwrite-strings -Waggregate-return -O2
-LIBS = -lgdi32 -luser32 -lws2_32 -liphlpapi -I"C:/Program Files/OpenSSL-Win64/include" -L"C:/Program Files/OpenSSL-Win64/lib/VC/x64/MT" -lssl -lcrypto -fpermissive
+FLAGS = -c -Wall -Wextra -Wcast-align -Wwrite-strings -Waggregate-return -O2 -std=c++17
+LIBS = -lgdi32 -luser32 -lws2_32 -liphlpapi -I"./HEADER" -I"C:/Program Files/OpenSSL-Win64/include" -L"C:/Program Files/OpenSSL-Win64/lib/VC/x64/MT" -lssl -lcrypto -fpermissive
 
 SRC_DIR = ./SRC
-OBJ_DIR = ./BIN
+HEADER_DIR = ./HEADER
+OBJ_DIR = ./BUILD
 OUTPUT = ./BIN/demo.exe
 
-# Tìm tất cả các file .cpp trong SRC_DIR
+# Find all .cpp files in SRC_DIR
 SRC_FILES = $(wildcard $(SRC_DIR)/**/*.cpp) $(wildcard $(SRC_DIR)/*.cpp)
 
-# Chuyển đổi file .cpp thành file .o tương ứng
+# Convert .cpp files to .o files
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRC_FILES))
 
-# Quy tắc mặc định
+# Default rule
 all: $(OUTPUT)
 
-# Liên kết các file đối tượng thành file thực thi
+# Link object files into executable
 $(OUTPUT): $(OBJ_FILES)
 	@echo "Linking objects to executable..."
+	@mkdir -p $(dir $@)
 	$(COMPILER) $(OBJ_FILES) -o $@ $(LIBS)
-	@echo "Built successfully."
+	@echo "Build completed successfully."
 
-# Biên dịch từng file .cpp thành file .o
+# Compile each .cpp file into .o
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "Compiling $<..."
 	@mkdir -p $(dir $@)
 	$(COMPILER) $(FLAGS) $< -o $@ $(LIBS)
 
+# Run the program
 run: $(OUTPUT)
 	$(OUTPUT)
 
-# Xóa các file build
+# Clean build files
 clean:
 	@rm -rf $(OBJ_DIR) $(OUTPUT)
 	@echo "Cleaned build files."
 
-.PHONY: all clean
+# Dependency rules (optional but improves clarity)
+$(OBJ_DIR)/SERVER/ProxyServer.o: $(HEADER_DIR)/ProxyServer.hpp $(HEADER_DIR)/ClientHandler.hpp
+$(OBJ_DIR)/BLOCKURL/BlackList.o: $(HEADER_DIR)/BlackList.hpp
+$(OBJ_DIR)/HANDLE/ClientHandler.o: $(HEADER_DIR)/ClientHandler.hpp $(HEADER_DIR)/BlackList.hpp
+$(OBJ_DIR)/HANDLE/HttpHandler.o: $(HEADER_DIR)/HttpHandler.hpp
+$(OBJ_DIR)/HANDLE/Request.o: $(HEADER_DIR)/Request.hpp $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/HttpHandler.hpp
+$(OBJ_DIR)/HANDLE/Response.o: $(HEADER_DIR)/Response.hpp $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/HttpHandler.hpp
+$(OBJ_DIR)/HANDLE/SocketHandler.o: $(HEADER_DIR)/SocketHandler.hpp
+$(OBJ_DIR)/NETWORK/NetworkManager.o: $(HEADER_DIR)/NetworkManager.hpp
+$(OBJ_DIR)/THREAD/ThreadManager.o: $(HEADER_DIR)/ThreadManager.hpp
+$(OBJ_DIR)/THREAD/ThreadPool.o: $(HEADER_DIR)/ThreadPool.hpp $(HEADER_DIR)/ClientHandler.hpp
+$(OBJ_DIR)/main.o: $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/ProxyServer.hpp
+
+.PHONY: all clean run
