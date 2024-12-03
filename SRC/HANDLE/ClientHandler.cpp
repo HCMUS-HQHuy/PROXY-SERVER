@@ -65,8 +65,12 @@ ClientHandler::ClientHandler(SOCKET sock) {
 
     SOCKET remote = SOCKET_ERROR;
     if (parseHostAndPort(std::string(buffer, bytesRecv), host, port)) {
-        if (blackList.isMember(host)) host = "example.com";
+        if (blackList.isMember(host)) {
+            host = "";
+            std::cerr << "Blocked!\n";
+        }
         else {
+            std::cerr << "Allowed.\n";
             remote = connectToServer();
             if (port == HTTPS_PORT) {
                 const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
