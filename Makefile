@@ -28,9 +28,8 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	$(COMPILER) $(FLAGS) $< -o $@ $(LIBS)
 
-# Tạo thư mục obj_dir nếu chưa tồn tại
-$(OBJ_DIR):
-	@mkdir -p $(OBJ_DIR)
+run: $(OUTPUT)
+	$(OUTPUT)
 
 # Xóa các file build
 clean:
