@@ -1,7 +1,7 @@
 TEST.cpp
 *.exe
-BIN
-BUILD
+BIN/
+BUILD/
 .vscode
 tmp.cpp
 CERTIFICATE/GENERATED
