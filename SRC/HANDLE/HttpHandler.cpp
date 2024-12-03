@@ -20,6 +20,7 @@ HttpHandler::HttpHandler() {
 }
 
 HttpHandler::~HttpHandler() {
+    // std::cerr << "in HTTP Handler END!!\n";
     delete[] buffer;
 }
 

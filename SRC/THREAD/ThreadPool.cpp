@@ -1,4 +1,5 @@
 #include "./../../HEADER/ThreadPool.hpp"
+#include "./../../HEADER/Setting.hpp"
 
 ThreadPool requestHandlerPool(std::thread::hardware_concurrency() * 30);
 // ThreadPool requestHandlerPool(1);
@@ -10,14 +11,23 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                 std::shared_ptr<ClientHandler> task;
                 {
                     std::unique_lock<std::mutex> lock(this->queueMutex);
-                    this->condition.wait(lock, [this] { return this->stop || !this->tasks.empty(); });
-                    if (this->stop && this->tasks.empty()) return;
-                    task = std::move(this->tasks.front());
-                    this->tasks.pop();
+                    this->condition.wait(lock, [this] { return this->stop || !this->tasks.empty() || !ServerRunning; });
+                    if ((this->stop && this->tasks.empty())  || !ServerRunning) return;
+                    if (!this->tasks.empty()) {
+                        task = std::move(this->tasks.front());
+                        this->tasks.pop();
+                    }
                 }
-                ++activeThreads;
-                task->handleRequest();
-                activeThreads--;
+                // Nếu có task, xử lý
+                if (task) {
+                    try {
+                        task->handleRequest();
+                    } catch (const std::exception& e) {
+                        std::cerr << "Exception in task: " << e.what() << std::endl;
+                    } catch (...) {
+                        std::cerr << "Unknown exception in task." << std::endl;
+                    }
+                }
             }
         });
     }
@@ -56,5 +66,5 @@ ThreadPool::~ThreadPool() {
         stop = true;
     }
     condition.notify_all();
-    for (std::thread& worker : workers) worker.join();
+    for (std::thread& worker : workers) if (worker.joinable()) worker.join();
 }

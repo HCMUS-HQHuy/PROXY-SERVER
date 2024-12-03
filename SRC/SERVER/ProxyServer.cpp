@@ -35,7 +35,7 @@ void ProxyServer::start() {
             //     h.handleRequest();
         }
     }
-    std::cerr << "END!!\n";
+    std::cerr << "in proxy server END!!\n";
 }
 
 void ProxyServer::stop(int signum) {

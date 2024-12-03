@@ -4,7 +4,6 @@
 #include "./setting.hpp"
 #include "./SocketHandler.hpp"
 
-#define BUFFER_SIZE 1024
 #define sz(s) (int)s.size()
 
 class HttpHandler {
