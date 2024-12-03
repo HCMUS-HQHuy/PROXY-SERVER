@@ -7,6 +7,7 @@
 #include "./../../HEADER/BlackList.hpp"
 
 bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname, int& port) {
+    // std::cerr << request << '\n';
     if (request.find("\r\n\r\n") == std::string::npos) {
         std::cerr << "MISSING HEADER HTTP DATA.\n";
         std::cerr << request << '\n';
@@ -43,7 +44,7 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
     } else {
         // Không có port, sử dụng port mặc định
         hostname = domain;
-        port = HTTP;
+        port = HTTP_PORT; 
     }
 
     // Loại bỏ các ký tự không hợp lệ ở cuối hostname (nếu có)
@@ -63,12 +64,24 @@ ClientHandler::ClientHandler(SOCKET sock) {
     // std::cerr << "Create new client Handler\n";
     char buffer[BUFFER_SIZE]; 
     int bytesRecv = recv(sock, buffer, BUFFER_SIZE, 0);
-    host = ""; port = -1;
+    host.clear(); port = -1;
     parseHostAndPort(std::string(buffer, bytesRecv), host, port);
+    if (port == HTTP_PORT) {
+        SOCKET remote = connectToServer();
+        send(remote, buffer, bytesRecv, 0);
+        bytesRecv = recv(remote, buffer, BUFFER_SIZE, 0);
+        send(sock, buffer, bytesRecv, 0);
+        std::cerr << "HTTP REQUEST SUCCESFUL!! " << host << " port:" << port << '\n';
+        host.clear(); closesocket(remote);
+    }
     socketHandler = nullptr;
 }
 
 bool ClientHandler::handleConnection(SOCKET sock) {
+    if (host.empty()) {
+        std::cerr << "SKIP\n";
+        return false;
+    }
     SOCKET remote = SOCKET_ERROR;
     if (blackList.isMember(host)) {
         std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
@@ -77,7 +90,7 @@ bool ClientHandler::handleConnection(SOCKET sock) {
         if (byteSent != strlen(response)) {
             std::cerr << "Failed to send response.\n";
         }
-        host = "";
+        host.clear();
         closesocket(sock);
         return false;
     }
@@ -90,10 +103,13 @@ bool ClientHandler::handleConnection(SOCKET sock) {
             if (byteSent != strlen(response)) {
                 closesocket(remote);
                 remote = SOCKET_ERROR;
+                std::cerr << "CANNOT CONNECT TO BROWSER\n";
+                return false;
             }
         }
     }
     socketHandler = new SocketHandler(sock, remote, port==HTTPS_PORT);
+    // socketHandler = new SocketHandler(sock, remote, false);
     return true;
 }
 
