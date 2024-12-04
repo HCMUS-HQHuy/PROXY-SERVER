@@ -36,7 +36,10 @@ public:
     ~HttpHandler();
     int sendMessage(Socket id, int size = BUFFER_SIZE);
     int receiveMessage(Socket id, int size = BUFFER_SIZE);
+    int receiveMessage(SOCKET, int size = BUFFER_SIZE);
     bool isEndMessage();
+    string getHeader();
+    string getBody();
 };
 
 #endif

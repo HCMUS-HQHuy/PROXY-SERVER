@@ -8,8 +8,11 @@
 class RequestHandler: public HttpHandler{
 private:
 public:
+    RequestHandler();
     RequestHandler(SocketHandler* socketHandler);
     bool handleRequest();
+    bool receiveRequest(SOCKET sock);
+    bool sendRequest(SOCKET sock);
 };
 
 

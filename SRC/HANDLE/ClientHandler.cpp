@@ -60,25 +60,16 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
     return true;
 }
 
-ClientHandler::ClientHandler(SOCKET sock) {
-    // std::cerr << "Create new client Handler\n";
-    char buffer[BUFFER_SIZE]; 
-    int bytesRecv = recv(sock, buffer, BUFFER_SIZE, 0);
+ClientHandler::ClientHandler(bool type) {
     host.clear(); port = -1;
-    parseHostAndPort(std::string(buffer, bytesRecv), host, port);
-    if (port == HTTP_PORT) {
-        SOCKET remote = connectToServer();
-        send(remote, buffer, bytesRecv, 0);
-        bytesRecv = recv(remote, buffer, BUFFER_SIZE, 0);
-        send(sock, buffer, bytesRecv, 0);
-        std::cerr << "HTTP REQUEST SUCCESFUL!! " << host << " port:" << port << '\n';
-        host.clear(); closesocket(remote);
-    }
     socketHandler = nullptr;
+    isMITM = type;
 }
 
 bool ClientHandler::handleConnection(SOCKET sock) {
-    if (host.empty()) {
+    RequestHandler request; request.receiveRequest(sock);
+    parseHostAndPort(request.getHeader(), host, port);
+    if (port == -1) {
         std::cerr << "SKIP\n";
         return false;
     }
@@ -94,22 +85,22 @@ bool ClientHandler::handleConnection(SOCKET sock) {
         closesocket(sock);
         return false;
     }
-    else {
-        std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
-        remote = connectToServer();
-        if (port == HTTPS_PORT) {
-            const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
-            size_t byteSent = send(sock, response, strlen(response), 0);
-            if (byteSent != strlen(response)) {
-                closesocket(remote);
-                remote = SOCKET_ERROR;
-                std::cerr << "CANNOT CONNECT TO BROWSER\n";
-                return false;
-            }
+
+    std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
+    remote = connectToServer();
+    if (port == HTTPS_PORT) {
+        const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
+        size_t byteSent = send(sock, response, strlen(response), 0);
+        if (byteSent != strlen(response)) {
+            closesocket(remote);
+            remote = SOCKET_ERROR;
+            std::cerr << "CANNOT CONNECT TO BROWSER\n";
+            return false;
         }
     }
-    socketHandler = new SocketHandler(sock, remote, port==HTTPS_PORT);
-    // socketHandler = new SocketHandler(sock, remote, false);
+    else request.sendRequest(remote);
+    if (isMITM) socketHandler = new SocketHandler(sock, remote, port==HTTPS_PORT);
+    else socketHandler = new SocketHandler(sock, remote, false);
     return true;
 }
 
@@ -146,6 +137,11 @@ SOCKET ClientHandler::connectToServer() {
 } 
 
 void ClientHandler::handleRequest() {
+    if (isMITM) handleMITM();
+    else handleRelayData();
+}
+
+void ClientHandler::handleMITM() {
     if (socketHandler->isValid() == false) return;
     if (socketHandler->setSSLContexts(host) == false) return;
 
@@ -170,7 +166,6 @@ void ClientHandler::handleRequest() {
             const auto& currentTime = std::chrono::steady_clock::now();
             const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count(); 
             if (idleDuration > MAX_IDLE_TIME) {
-                // std::cerr << "TIMEOUT\n";
                 break;
             }
             continue;
@@ -193,5 +188,62 @@ void ClientHandler::handleRequest() {
             if (response.handleResponse() == false) break;
         }
     }
-    // std::cerr << "in client Handler END!!\n";
+}
+
+void ClientHandler::handleRelayData() {
+    if (socketHandler->isValid() == false) return;
+
+    struct pollfd fds[2];
+    for (int i: {0, 1}) {
+        fds[i].fd = socketHandler->socketID[i];
+        fds[i].events = POLLIN;  
+    }
+
+    #define TIMEOUT 100
+    #define MAX_IDLE_TIME 5000
+
+    auto lastActivity = std::chrono::steady_clock::now();
+
+    while (ServerRunning) {
+        int ret = WSAPoll(fds, 2, TIMEOUT);
+        if (ret < 0) {
+            std::cerr << "WSAPoll ERROR!\n";
+            break;
+        }
+        else if (ret == 0) {
+            const auto& currentTime = std::chrono::steady_clock::now();
+            const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count(); 
+            if (idleDuration > MAX_IDLE_TIME) {
+                break;
+            }
+            continue;
+        }
+        
+        for (int t = 0; t < 2; ++t)
+            if (fds[t].revents & (POLLERR | POLLHUP)) {
+                std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
+                return;
+            }
+
+        lastActivity = std::chrono::steady_clock::now();
+
+        if (fds[0].revents & POLLIN) {
+            char buffer[BUFFER_SIZE];
+            int bytesReceived = recv(socketHandler->socketID[browser], buffer, BUFFER_SIZE, 0);
+            if (bytesReceived <= 0) {
+                std::cerr << "Client closed connection.\n";
+                break;
+            }
+            send(socketHandler->socketID[server], buffer, bytesReceived, 0);
+        }
+        if (fds[1].revents & POLLIN) {
+            char buffer[BUFFER_SIZE];
+            int bytesReceived = recv(socketHandler->socketID[server], buffer, BUFFER_SIZE, 0);
+            if (bytesReceived <= 0) {
+                std::cerr << "Client closed connection.\n";
+                break;
+            }
+            send(socketHandler->socketID[browser], buffer, bytesReceived, 0);
+        }
+    }
 }

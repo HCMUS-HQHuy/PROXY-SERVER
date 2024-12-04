@@ -4,13 +4,15 @@
 #include "./Setting.hpp"
 #include "./NetworkManager.hpp"
 
+enum Proxy{MITM, Transparent};
+
 class ProxyServer : public NetworkManager{
 private:
-    int port;
+    int port; Proxy type;
     void waitingClient();
     SOCKET acceptClient();
 public:
-    ProxyServer(int port);
+    ProxyServer(Proxy type, int port);
     void start();
     static void stop(int signum);
 } ;

@@ -10,7 +10,7 @@ void debugerString(const string &name, const string &buffer) {
     std::cerr << "\n-----------------------------------------------\n";
 }
 
-HttpHandler::HttpHandler() { 
+HttpHandler::HttpHandler() {
     buffer = new char[BUFFER_SIZE]();
     flagEndMessage = false; contentLength = -1;
     curChunkID = chunkEnd = 0;
@@ -39,7 +39,6 @@ int HttpHandler::sendMessage(Socket id, int sizeSending) {
 }
 
 int HttpHandler::receiveMessage(Socket id, int size) {
-    STEP++;
     int bytesReceived = 0; 
     Protocol protocol = socketHandler->protocol;
     if (protocol == HTTP) {
@@ -54,8 +53,20 @@ int HttpHandler::receiveMessage(Socket id, int size) {
         return bytesReceived;
     }
 
-    if (protocol == HTTPS) handleMessage(bytesReceived);
-    else onFlagEnd(); 
+    handleMessage(bytesReceived);
+    return bytesReceived;
+}
+
+int HttpHandler::receiveMessage(SOCKET sock, int size) {
+    int bytesReceived = recv(sock, buffer, size, 0);
+    if (bytesReceived < 0) std::cerr << "RECEIVING ERRORS!\n";
+    if (bytesReceived == 0) std::cerr << "CONNECTION CLOSED!\n";
+    if (bytesReceived <= 0) {
+        onFlagEnd();
+        return bytesReceived;
+    }
+
+    handleMessage(bytesReceived);
     return bytesReceived;
 }
 
@@ -138,7 +149,10 @@ bool HttpHandler::isEndMessage() {
     return flagEndMessage;
 }
 
-void HttpHandler::printHeader() {
-    std::cerr << "HEADER\n";
-    std::cerr << header << '\n';
+string HttpHandler::getHeader() {
+    return header;
+}
+
+string HttpHandler::getBody() {
+    return body;
 }

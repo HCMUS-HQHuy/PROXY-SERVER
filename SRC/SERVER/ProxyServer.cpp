@@ -3,8 +3,8 @@
 #include "./../../HEADER/ClientHandler.hpp"
 #include <fstream>
 
-ProxyServer::ProxyServer(int p) {
-    port = p;
+ProxyServer::ProxyServer(Proxy t, int p) {
+    type = t; port = p;
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;  
@@ -24,7 +24,7 @@ void ProxyServer::start() {
     while (ServerRunning) {
         SOCKET client = acceptClient();
         if (client != INVALID_SOCKET) {
-            std::shared_ptr<ClientHandler> h = std::make_shared<ClientHandler>(client);
+            std::shared_ptr<ClientHandler> h = std::make_shared<ClientHandler>(type == MITM);
             if (h->handleConnection(client))
                 requestHandlerPool.enqueue(std::move(h));
             // ClientHandler h(client);
