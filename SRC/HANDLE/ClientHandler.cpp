@@ -77,14 +77,15 @@ bool ClientHandler::handleConnection(SOCKET sock) {
         return false;
     }
     SOCKET remote = SOCKET_ERROR;
-    if (blackList.isMember(host)) {
+    if ((!isMITM || port == HTTP_PORT) && blackList.isMember(host)) {
         Logger::errorStatus(-7);
         std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
         host.clear(); closesocket(sock);
         return false;
     }
 
-    std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
+    if (!blackList.isMember(host)) std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
+
     remote = connectToServer();
     if (port == HTTPS_PORT) {
         const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
@@ -143,6 +144,18 @@ void ClientHandler::handleMITM() {
     if (socketHandler->isValid() == false) return;
     if (socketHandler->setSSLContexts(host) == false) return;
 
+    if (blackList.isMember(host)) {
+        std::string redirectResponse = 
+            "HTTP/1.1 302 Found\r\n"
+            "Location: https://example.com\r\n"
+            "Content-Length: 0\r\n"
+            "Connection: close\r\n\r\n";
+
+        SSL_write(socketHandler->sslID[browser], redirectResponse.c_str(), redirectResponse.size());
+        std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
+        return;
+    }
+
     struct pollfd fds[2];
     for (int i: {0, 1}) {
         fds[i].fd = socketHandler->socketID[i];
@@ -172,7 +185,6 @@ void ClientHandler::handleMITM() {
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
                 Logger::errorStatus(-14);
-                // std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
                 return;
             }
 
