@@ -1,17 +1,11 @@
 #include "./../../HEADER/ThreadPool.hpp"
 #include "./../../HEADER/ProxyServer.hpp"
 #include "./../../HEADER/ClientHandler.hpp"
+#include "./../../HEADER/Logger.hpp"
 #include <fstream>
 
-<<<<<<< HEAD
 ProxyServer::ProxyServer(Proxy t, int p) {
     type = t; port = p;
-=======
-#include "./../../HEADER/Logger.hpp"
-
-ProxyServer::ProxyServer(int p) {
-    port = p;
->>>>>>> 5e8ffb7f7cdd0c4f6a9d7c4370fcbdf111aeecb4
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;  

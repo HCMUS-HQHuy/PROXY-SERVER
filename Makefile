@@ -42,7 +42,7 @@ clean:
 	@echo "Cleaned build files."
 
 # Dependency rules (optional but improves clarity)
-$(OBJ_DIR)/SERVER/ProxyServer.o: $(HEADER_DIR)/ProxyServer.hpp $(HEADER_DIR)/ClientHandler.hpp
+$(OBJ_DIR)/SERVER/ProxyServer.o: $(HEADER_DIR)/ProxyServer.hpp $(HEADER_DIR)/ClientHandler.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/SERVER/Logger.o: $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/BLOCKURL/BlackList.o: $(HEADER_DIR)/BlackList.hpp
 $(OBJ_DIR)/HANDLE/ClientHandler.o: $(HEADER_DIR)/ClientHandler.hpp $(HEADER_DIR)/BlackList.hpp $(HEADER_DIR)/Logger.hpp

@@ -60,8 +60,8 @@ int HttpHandler::receiveMessage(Socket id, int size) {
 
 int HttpHandler::receiveMessage(SOCKET sock, int size) {
     int bytesReceived = recv(sock, buffer, size, 0);
-    if (bytesReceived < 0) std::cerr << "RECEIVING ERRORS!\n";
-    if (bytesReceived == 0) std::cerr << "CONNECTION CLOSED!\n";
+    if (bytesReceived < 0) Logger::errorStatus(-17);
+    if (bytesReceived == 0) Logger::errorStatus(-16);
     if (bytesReceived <= 0) {
         onFlagEnd();
         return bytesReceived;

@@ -11,8 +11,8 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
     // std::cerr << request << '\n';
     if (request.find("\r\n\r\n") == std::string::npos) {
         Logger::errorStatus(-1);
-        std::cerr << "MISSING HEADER HTTP DATA.\n";
-        std::cerr << request << '\n';
+        // std::cerr << "MISSING HEADER HTTP DATA.\n";
+        // std::cerr << request << '\n';
         return false;
     }
 
@@ -72,21 +72,15 @@ bool ClientHandler::handleConnection(SOCKET sock) {
     RequestHandler request; request.receiveRequest(sock);
     parseHostAndPort(request.getHeader(), host, port);
     if (port == -1) {
-        std::cerr << "SKIP\n";
-        Logger::errorStatus(-6);
+        // std::cerr << "SKIP\n";
+        // Logger::errorStatus(-6);
         return false;
     }
     SOCKET remote = SOCKET_ERROR;
     if (blackList.isMember(host)) {
         Logger::errorStatus(-7);
         std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
-        const char* response = "HTTP/1.1 403 Forbidden\r\n\r\n";
-        size_t byteSent = send(sock, response, strlen(response), 0);
-        if (byteSent != strlen(response)) {
-            Logger::errorStatus(-8);
-        }
-        host.clear();
-        closesocket(sock);
+        host.clear(); closesocket(sock);
         return false;
     }
 
@@ -96,8 +90,8 @@ bool ClientHandler::handleConnection(SOCKET sock) {
         const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
         size_t byteSent = send(sock, response, strlen(response), 0);
         if (byteSent != strlen(response)) {
-            closesocket(remote);
-            remote = SOCKET_ERROR;
+            closesocket(remote); closesocket(sock);
+            remote = SOCKET_ERROR; 
             Logger::errorStatus(-9);
             return false;
         }
@@ -178,7 +172,7 @@ void ClientHandler::handleMITM() {
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
                 Logger::errorStatus(-14);
-                std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
+                // std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
                 return;
             }
 
@@ -212,7 +206,7 @@ void ClientHandler::handleRelayData() {
     while (ServerRunning) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
         if (ret < 0) {
-            std::cerr << "WSAPoll ERROR!\n";
+            Logger::errorStatus(-13);
             break;
         }
         else if (ret == 0) {
@@ -226,7 +220,8 @@ void ClientHandler::handleRelayData() {
         
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
-                std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
+                Logger::errorStatus(-14);
+                // std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
                 return;
             }
 
@@ -236,7 +231,7 @@ void ClientHandler::handleRelayData() {
             char buffer[BUFFER_SIZE];
             int bytesReceived = recv(socketHandler->socketID[browser], buffer, BUFFER_SIZE, 0);
             if (bytesReceived <= 0) {
-                std::cerr << "Client closed connection.\n";
+                Logger::errorStatus(-37);
                 break;
             }
             send(socketHandler->socketID[server], buffer, bytesReceived, 0);
@@ -245,7 +240,7 @@ void ClientHandler::handleRelayData() {
             char buffer[BUFFER_SIZE];
             int bytesReceived = recv(socketHandler->socketID[server], buffer, BUFFER_SIZE, 0);
             if (bytesReceived <= 0) {
-                std::cerr << "Client closed connection.\n";
+                Logger::errorStatus(-37);
                 break;
             }
             send(socketHandler->socketID[browser], buffer, bytesReceived, 0);

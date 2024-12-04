@@ -4,7 +4,7 @@
 std::atomic<bool> ServerRunning{true};
 
 int main() {
-    ProxyServer proxyServer(Transparent, LOCAL_PORT);
+    ProxyServer proxyServer(MITM, LOCAL_PORT);
 
     std::signal(SIGINT, ProxyServer::stop); 
     
