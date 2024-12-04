@@ -1,5 +1,6 @@
 #include "./../../HEADER/ThreadPool.hpp"
 #include "./../../HEADER/Setting.hpp"
+#include "./../../HEADER/Logger.hpp"
 
 ThreadPool requestHandlerPool(std::thread::hardware_concurrency() * 30);
 // ThreadPool requestHandlerPool(1);
@@ -23,9 +24,10 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                     try {
                         task->handleRequest();
                     } catch (const std::exception& e) {
+                        Logger::errorStatus(-46);
                         std::cerr << "Exception in task: " << e.what() << std::endl;
                     } catch (...) {
-                        std::cerr << "Unknown exception in task." << std::endl;
+                        Logger::errorStatus(-47);
                     }
                 }
             }

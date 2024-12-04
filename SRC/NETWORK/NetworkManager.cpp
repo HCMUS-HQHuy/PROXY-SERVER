@@ -1,14 +1,18 @@
 #include "./../../HEADER/NetworkManager.hpp"
 #include <iphlpapi.h>
 
+#include "./../../HEADER/Logger.hpp"
+
 NetworkManager::NetworkManager() {
     IPv4 = getIPv4();
     int error = WSAStartup(MAKEWORD(2,2), &wsaData);
     if (error != 0) {
+        Logger::errorStatus(-33);
         std::cerr << "WSAStartup failed: " << error << '\n';
     }
     localSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (localSocket == INVALID_SOCKET) {
+        Logger::errorStatus(-34);
         std::cerr << "Socket creation failed: " << WSAGetLastError() << std::endl;
     }
     std::cerr << "NetworkManager initialized successfully!\n";
@@ -23,6 +27,7 @@ NetworkManager::~NetworkManager() {
 int NetworkManager::sendMessage(SOCKET &Socket, char *message, int sizeMessage) {
     int bytesSent = send(Socket, message, sizeMessage, 0);
     if (bytesSent == SOCKET_ERROR) {
+        Logger::errorStatus(-35);
         std::cerr << "Sent message faild! Code error: " << WSAGetLastError() << std::endl;
     }
     return bytesSent;
@@ -31,10 +36,12 @@ int NetworkManager::sendMessage(SOCKET &Socket, char *message, int sizeMessage) 
 int NetworkManager::receiveMessage(SOCKET &Socket, char* message, int sizeMessage) {
     int byteReceived = recv(Socket, message, sizeMessage, 0);
     if (byteReceived == SOCKET_ERROR) {
+        Logger::errorStatus(-36);
         std::cerr << "Error receiving data: " << WSAGetLastError() << std::endl;
     }
 
     if (byteReceived == 0) {
+        Logger::errorStatus(-37);
         std::cerr << "Connection interrupted" << std::endl;
     }
     return byteReceived;
@@ -50,6 +57,7 @@ int NetworkManager::sendLargeData(SOCKET sock, char* data, int dataSize) {
         int sent = send(sock, data + totalSent, bytesToSend, 0);
         if (sent == SOCKET_ERROR) {
             int errorCode = WSAGetLastError();
+            Logger::errorStatus(-38);
             std::cerr << "Error sending data: " << errorCode << std::endl;
             return SOCKET_ERROR;
         }
@@ -70,13 +78,14 @@ int NetworkManager::receiveLargeData(SOCKET sock, char* buffer, int dataSize) {
 
         if (received == SOCKET_ERROR) {
             int errorCode = WSAGetLastError();
+            Logger::errorStatus(-36);
             std::cerr << "Error receiving data: " << errorCode 
                         << " at totalReceived = " << totalReceived << '\n';
             return SOCKET_ERROR;
         }
 
         if (received == 0) {
-            std::cerr << "Connection closed by peer.\n";
+            Logger::errorStatus(-39);
             break;
         }
         totalReceived += received;
@@ -112,7 +121,7 @@ char* NetworkManager::getIPv4() {
             currentAdapter = currentAdapter->Next;
         }
     } else {
-        std::cerr << "GetAdaptersAddresses failed." << std::endl;
+        Logger::errorStatus(-40);
     }
     free(adapterAddresses);
     return ipAddress;
