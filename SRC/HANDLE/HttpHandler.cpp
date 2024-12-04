@@ -1,4 +1,5 @@
 #include "./../../HEADER/HttpHandler.hpp"
+#include "./../../HEADER/Logger.hpp"
 
 void debugerString(const string &name, const string &buffer) {
     std::cerr << "\n-----------------------------------------------\n";
@@ -32,8 +33,8 @@ int HttpHandler::sendMessage(Socket id, int sizeSending) {
     } else if (protocol == HTTPS) {
         bytesSent = SSL_write(socketHandler->sslID[id], buffer, sizeSending);
     }
-    if (bytesSent < 0) std::cerr << "SENDING ERRORS!\n";
-    if (bytesSent == 0) std::cerr << "CONNECTION CLOSED!\n";
+    if (bytesSent < 0) Logger::errorStatus(-15);
+    if (bytesSent == 0) Logger::errorStatus(-16);
     if (bytesSent <= 0) onFlagEnd();
     return bytesSent;
 }
@@ -47,8 +48,8 @@ int HttpHandler::receiveMessage(Socket id, int size) {
     } else if (protocol == HTTPS) {
         bytesReceived = SSL_read(socketHandler->sslID[id], buffer, size);
     }
-    if (bytesReceived < 0) std::cerr << "RECEIVING ERRORS!\n";
-    if (bytesReceived == 0) std::cerr << "CONNECTION CLOSED!\n";
+    if (bytesReceived < 0) Logger::errorStatus(-17);
+    if (bytesReceived == 0) Logger::errorStatus(-16);
     if (bytesReceived <= 0) {
         onFlagEnd();
         return bytesReceived;

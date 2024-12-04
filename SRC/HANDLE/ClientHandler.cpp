@@ -5,10 +5,12 @@
 #include "./../../HEADER/ThreadManager.hpp"
 #include "./../../HEADER/ClientHandler.hpp"
 #include "./../../HEADER/BlackList.hpp"
+#include "./../../HEADER/Logger.hpp"
 
 bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname, int& port) {
     // std::cerr << request << '\n';
     if (request.find("\r\n\r\n") == std::string::npos) {
+        Logger::errorStatus(-1);
         std::cerr << "MISSING HEADER HTTP DATA.\n";
         std::cerr << request << '\n';
         return false;
@@ -18,7 +20,7 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
 
     size_t hostPos = request.find("Host: ");
     if (hostPos == std::string::npos) {
-        std::cerr << "HOST HEADER NOT FOUND IN REQUEST.\n";
+        Logger::errorStatus(-2);
         return false;
     }
 
@@ -34,10 +36,10 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
         try {
             port = std::stoi(domain.substr(colonPos + 1));
         } catch (const std::invalid_argument&) {
-            std::cerr << "INVALID PORT NUMBER." << std::endl;
+            Logger::errorStatus(-3);
             return false;
         } catch (const std::out_of_range&) {
-            std::cerr << "PORT NUMBER OUT OF RANGE." << std::endl;
+            Logger::errorStatus(-4);
             return false;
         }
         hostname = domain.substr(0, colonPos);
@@ -53,7 +55,7 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
     }
 
     if (hostname.empty()) {
-        std::cerr << "HOST NOT FOUND IN REQUEST.\n";
+        Logger::errorStatus(-5);
         return false;
     }
 
@@ -79,16 +81,17 @@ ClientHandler::ClientHandler(SOCKET sock) {
 
 bool ClientHandler::handleConnection(SOCKET sock) {
     if (host.empty()) {
-        std::cerr << "SKIP\n";
+        Logger::errorStatus(-6);
         return false;
     }
     SOCKET remote = SOCKET_ERROR;
     if (blackList.isMember(host)) {
+        Logger::errorStatus(-7);
         std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
         const char* response = "HTTP/1.1 403 Forbidden\r\n\r\n";
         size_t byteSent = send(sock, response, strlen(response), 0);
         if (byteSent != strlen(response)) {
-            std::cerr << "Failed to send response.\n";
+            Logger::errorStatus(-8);
         }
         host.clear();
         closesocket(sock);
@@ -103,7 +106,7 @@ bool ClientHandler::handleConnection(SOCKET sock) {
             if (byteSent != strlen(response)) {
                 closesocket(remote);
                 remote = SOCKET_ERROR;
-                std::cerr << "CANNOT CONNECT TO BROWSER\n";
+                Logger::errorStatus(-9);
                 return false;
             }
         }
@@ -121,13 +124,13 @@ ClientHandler::~ClientHandler() {
 SOCKET ClientHandler::connectToServer() {
     hostent* hostInfo = gethostbyname(host.c_str());
     if (hostInfo == nullptr) {
-        std::cerr << "Failed to resolve host name." << std::endl;
+        Logger::errorStatus(-10);
         return SOCKET_ERROR;
     }
     // Create a socket to listen for client connections
     SOCKET remoteSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (remoteSocket == INVALID_SOCKET) {
-        std::cerr << "Error creating socket." << std::endl;
+        Logger::errorStatus(-11);
         return SOCKET_ERROR;
     }
 
@@ -138,7 +141,7 @@ SOCKET ClientHandler::connectToServer() {
     remoteAddr.sin_addr.s_addr = *((unsigned long*)hostInfo->h_addr_list[0]);
 
     if (connect(remoteSocket, (sockaddr*)&remoteAddr, sizeof(remoteAddr)) == SOCKET_ERROR) {
-        std::cerr << "Error connecting to remote server." << std::endl;
+        Logger::errorStatus(-12);
         closesocket(remoteSocket);
         return SOCKET_ERROR;
     }
@@ -163,7 +166,7 @@ void ClientHandler::handleRequest() {
     while (ServerRunning) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
         if (ret < 0) {
-            std::cerr << "WSAPoll ERROR!\n";
+            Logger::errorStatus(-13);
             break;
         }
         else if (ret == 0) {
@@ -178,6 +181,7 @@ void ClientHandler::handleRequest() {
         
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
+                Logger::errorStatus(-14);
                 std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
                 return;
             }

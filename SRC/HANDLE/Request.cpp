@@ -4,6 +4,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "./../../HEADER/Logger.hpp"
+
 RequestHandler::RequestHandler(SocketHandler* _socketHandler){
     socketHandler = _socketHandler;
     HttpHandler();

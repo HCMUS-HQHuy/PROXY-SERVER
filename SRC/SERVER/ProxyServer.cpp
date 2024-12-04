@@ -3,6 +3,8 @@
 #include "./../../HEADER/ClientHandler.hpp"
 #include <fstream>
 
+#include "./../../HEADER/Logger.hpp"
+
 ProxyServer::ProxyServer(int p) {
     port = p;
     sockaddr_in serverAddr;
@@ -11,6 +13,7 @@ ProxyServer::ProxyServer(int p) {
     serverAddr.sin_port = htons(port);     
 
     if (bind(localSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+        Logger::errorStatus(-41);
         std::cerr << "Bind failed: " << WSAGetLastError() << std::endl;
         return;
     }
@@ -32,16 +35,18 @@ void ProxyServer::start() {
             //     h.handleRequest();
         }
     }
-    std::cerr << "in proxy server END!!\n";
+    Logger::errorStatus(-42);
 }
 
 void ProxyServer::stop(int signum) {
+    Logger::errorStatus(-43);
     std::cout << "Interrupt signal (" << signum << ") received. Stopping server..." << std::endl;
     ServerRunning = false; // Dừng server
 }
 
 void ProxyServer::waitingClient() {
     if (listen(localSocket, SOMAXCONN) == SOCKET_ERROR) {
+        Logger::errorStatus(-44);
         std::cerr << "Listen failed: " << WSAGetLastError() << std::endl;
         return;
     }
@@ -52,7 +57,7 @@ void ProxyServer::waitingClient() {
 SOCKET ProxyServer::acceptClient() {
     SOCKET clientSocket = accept(localSocket, nullptr, nullptr);
     if (clientSocket == INVALID_SOCKET) {
-        std::cerr << "Error accepting connection from client." << std::endl;
+        Logger::errorStatus(-45);
         return INVALID_SOCKET;
     }
     return clientSocket;

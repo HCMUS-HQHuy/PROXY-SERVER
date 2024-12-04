@@ -1,4 +1,5 @@
 #include "./../../HEADER/Response.hpp"
+#include "./../../HEADER/Logger.hpp"
 
 ResponseHandler::ResponseHandler(SocketHandler* _socketHandler){
     socketHandler = _socketHandler;
