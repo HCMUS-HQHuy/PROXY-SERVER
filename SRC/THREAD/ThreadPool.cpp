@@ -18,6 +18,7 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                     // Nếu trả về false thì chờ để  notetify và unlock
 
                     if ((this->stop && this->tasks.empty())  || !ServerRunning) return;
+                    
                     if (!this->tasks.empty()) {
                         task = std::move(this->tasks.front());
                         this->tasks.pop();
