@@ -34,5 +34,4 @@ public:
 
 extern ThreadPool requestHandlerPool;
 
-
 #endif 

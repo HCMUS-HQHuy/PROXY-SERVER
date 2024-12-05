@@ -13,13 +13,17 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                 {
                     std::unique_lock<std::mutex> lock(this->queueMutex);
                     this->condition.wait(lock, [this] { return this->stop || !this->tasks.empty() || !ServerRunning; });
+                    // [this] được gọi khi bị notetify. 
+                    // Nếu trả về true thì hoạt động lại và lock
+                    // Nếu trả về false thì chờ để  notetify và unlock
+
                     if ((this->stop && this->tasks.empty())  || !ServerRunning) return;
                     if (!this->tasks.empty()) {
                         task = std::move(this->tasks.front());
                         this->tasks.pop();
                     }
                 }
-                // Nếu có task, xử lý
+                
                 if (task) {
                     try {
                         task->handleRequest();
@@ -32,6 +36,7 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                 }
             }
         });
+        workers[i].detach();
     }
 }
 

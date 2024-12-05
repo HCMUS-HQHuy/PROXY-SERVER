@@ -11,8 +11,6 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
     // std::cerr << request << '\n';
     if (request.find("\r\n\r\n") == std::string::npos) {
         Logger::errorStatus(-1);
-        // std::cerr << "MISSING HEADER HTTP DATA.\n";
-        // std::cerr << request << '\n';
         return false;
     }
 
