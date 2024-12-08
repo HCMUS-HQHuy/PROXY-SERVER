@@ -190,11 +190,13 @@ void ClientHandler::handleMITM() {
 
         if (fds[0].revents & POLLIN) {
             RequestHandler request(socketHandler);
-            if (request.handleRequest() == false) break;
+            std::cerr << "IN BROWSER\n";
+            request.handleRequest();
         }
         if (fds[1].revents & POLLIN) {
             ResponseHandler response(socketHandler);
-            if (response.handleResponse() == false) break;
+            std::cerr << "IN SERVER\n";
+            response.handleResponse();
         }
     }
 }

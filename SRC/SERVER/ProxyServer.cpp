@@ -20,7 +20,6 @@ ProxyServer::ProxyServer(Proxy t, int p) {
 }
 
 void ProxyServer::start() {
-    std::signal(SIGINT, stop);
     waitingClient();
 
     while (ServerRunning) {
