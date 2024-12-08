@@ -3,7 +3,7 @@
 #endif
 #include "./../HEADER/Setting.hpp"
 #include "./../HEADER/ProxyServer.hpp"
-#include "./../HEADER/FrontEnd.hpp"
+#include "./../HEADER/UI.hpp"
 
 std::atomic<bool> ServerRunning{true};
 

@@ -53,7 +53,7 @@ $(OBJ_DIR)/HANDLE/SocketHandler.o: $(HEADER_DIR)/SocketHandler.hpp $(HEADER_DIR)
 $(OBJ_DIR)/NETWORK/NetworkManager.o: $(HEADER_DIR)/NetworkManager.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/THREAD/ThreadManager.o: $(HEADER_DIR)/ThreadManager.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/THREAD/ThreadPool.o: $(HEADER_DIR)/ThreadPool.hpp $(HEADER_DIR)/ClientHandler.hpp
-$(OBJ_DIR)/main.o: $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/ProxyServer.hpp $(HEADER_DIR)/FrontEnd.hpp
-$(OBJ_DIR)/FrontEnd/FrontEnd.o: $(HEADER_DIR)/FrontEnd.hpp $(HEADER_DIR)/ProxyServer.hpp
+$(OBJ_DIR)/main.o: $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/ProxyServer.hpp $(HEADER_DIR)/UI.hpp
+$(OBJ_DIR)/UI/UI.o: $(HEADER_DIR)/UI.hpp $(HEADER_DIR)/ProxyServer.hpp
 
 .PHONY: all clean run build
