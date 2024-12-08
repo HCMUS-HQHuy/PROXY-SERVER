@@ -1,6 +1,6 @@
 # Variables
 COMPILER = g++
-FLAGS = -c -Wall -Wextra -Wcast-align -Wwrite-strings -Waggregate-return -O2 -std=c++17
+FLAGS = -c -Wall -Wextra -Wcast-align -Wwrite-strings -Waggregate-return -O2 -std=c++17 -lcomctl32
 LIBS = -lgdi32 -luser32 -lws2_32 -liphlpapi -I"./HEADER" -I"C:/Program Files/OpenSSL-Win64/include" -L"C:/Program Files/OpenSSL-Win64/lib/VC/x64/MT" -lssl -lcrypto -fpermissive
 
 SRC_DIR = ./SRC
@@ -53,6 +53,7 @@ $(OBJ_DIR)/HANDLE/SocketHandler.o: $(HEADER_DIR)/SocketHandler.hpp $(HEADER_DIR)
 $(OBJ_DIR)/NETWORK/NetworkManager.o: $(HEADER_DIR)/NetworkManager.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/THREAD/ThreadManager.o: $(HEADER_DIR)/ThreadManager.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/THREAD/ThreadPool.o: $(HEADER_DIR)/ThreadPool.hpp $(HEADER_DIR)/ClientHandler.hpp
-$(OBJ_DIR)/main.o: $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/ProxyServer.hpp
+$(OBJ_DIR)/main.o: $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/ProxyServer.hpp $(HEADER_DIR)/FrontEnd.hpp
+$(OBJ_DIR)/FrontEnd/FrontEnd.o: $(HEADER_DIR)/FrontEnd.hpp $(HEADER_DIR)/ProxyServer.hpp
 
 .PHONY: all clean run build
