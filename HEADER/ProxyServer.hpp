@@ -14,6 +14,7 @@ private:
 public:
     ProxyServer(Proxy type, int port);
     void start();
+    Proxy getType();
     static void stop(int signum);
 } ;
 
