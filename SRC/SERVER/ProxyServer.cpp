@@ -7,7 +7,7 @@
 std::atomic<bool> ServerRunning;
 
 ProxyServer::ProxyServer(Proxy t, int p) {
-    type = t; port = p; ServerRunning = true;
+    type = t; port = p;
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;  
@@ -22,6 +22,7 @@ ProxyServer::ProxyServer(Proxy t, int p) {
 }
 
 void ProxyServer::start() {
+    ServerRunning = true;
     waitingClient();
 
     while (ServerRunning) {
