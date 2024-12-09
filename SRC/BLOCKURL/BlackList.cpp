@@ -21,7 +21,7 @@ BlackList::BlackList(const string &path) {
     }
 
     file.close();
-    for (auto x: URLs) std::cerr << x << "\n";
+    // for (auto x: URLs) std::cerr << x << "\n";
 }
 
 bool BlackList::isMember(const string &host) {

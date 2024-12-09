@@ -60,6 +60,36 @@ bool IsAtBottom(HWND hwndEdit) {
     return (firstVisible + visibleLines >= totalLines - 1);
 }
 
+bool IsAtBottomList(HWND hwndList) {
+    // Lấy tổng số item trong ListView
+    int totalItems = ListView_GetItemCount(hwndList);
+
+    // Lấy chỉ số của item đầu tiên trong vùng hiển thị
+    int firstVisible = SendMessage(hwndList, LVM_GETTOPINDEX, 0, 0);
+
+    // Lấy kích thước của cửa sổ hiển thị
+    RECT rect;
+    GetClientRect(hwndList, &rect);
+
+    // Khởi tạo RECT cho item
+    RECT itemRect = { 0 };
+
+    // Tính chiều cao của một item bằng cách lấy vị trí của item đầu tiên
+    if (ListView_GetItemRect(hwndList, 0, &itemRect, LVIR_BOUNDS)) {
+        int itemHeight = itemRect.bottom - itemRect.top;
+
+        // Tính số dòng có thể hiển thị trong cửa sổ
+        int visibleLines = rect.bottom / itemHeight;
+
+        // Kiểm tra xem dòng cuối có nằm trong vùng hiển thị không
+        return (firstVisible + visibleLines >= totalItems);
+    }
+
+    return false; // Trường hợp không thể lấy thông tin kích thước item
+}
+
+
+
 
 std::wstring ConvertToCRLF(const std::wstring& input) {
     std::wstring output;
@@ -140,6 +170,57 @@ void AppendContent(HWND hwndEdit, const std::wstring& content) {
 
 void DisplayContent(HWND hwndEdit, const std::wstring& content) {
     SetWindowText(hwndEdit, ConvertToCRLF(content).c_str());
+}
+
+// void AppendList(HWND hwndList, const std::wstring col1, const std::wstring col2, const std::wstring col3) {
+//         LVITEM lvItem;
+//         lvItem.mask = LVIF_TEXT;
+
+//         lvItem.iItem = SendMessage(hwndList, LVM_GETITEMCOUNT, 0, 0);
+//         lvItem.iSubItem = 0;
+//         lvItem.pszText = (LPWSTR)col1.c_str();
+//         ListView_InsertItem(hListView, &lvItem);
+//         ListView_SetItemText(hListView, lvItem.iItem, 1, (LPWSTR)col2.c_str());
+//         ListView_SetItemText(hListView, lvItem.iItem, 2, (LPWSTR)col3.c_str());
+// }
+
+void AppendList(HWND hwndList, const std::wstring col1, const std::wstring col2, const std::wstring col3) {
+    // Tạm thời tắt việc vẽ lại để tránh giật
+    SendMessage(hwndList, WM_SETREDRAW, FALSE, 0);
+
+    // Kiểm tra số lượng dòng hiện tại
+    int itemCount = ListView_GetItemCount(hwndList);
+    int firstLine = SendMessage(hwndList, LVM_GETTOPINDEX, 0, 0);
+    // Nếu số lượng dòng vượt quá maxLines, xóa dòng đầu tiên
+    bool isDel = false;
+    if (itemCount >= MAX_LINES) {
+        ListView_DeleteItem(hwndList, 0);
+        itemCount--; // Cập nhật lại số lượng dòng sau khi xóa
+        isDel = true;
+    }
+
+
+    LVITEM lvItem;
+    lvItem.mask = LVIF_TEXT;
+
+    lvItem.iItem = SendMessage(hwndList, LVM_GETITEMCOUNT, 0, 0);
+    lvItem.iSubItem = 0;
+    lvItem.pszText = (LPWSTR)col1.c_str();
+    ListView_InsertItem(hwndList, &lvItem);
+    ListView_SetItemText(hwndList, lvItem.iItem, 1, (LPWSTR)col2.c_str());
+    ListView_SetItemText(hwndList, lvItem.iItem, 2, (LPWSTR)col3.c_str());
+
+    // Kiểm tra nếu cuộn đã ở cuối, cuộn đến dòng cuối cùng
+    if (IsAtBottomList(hwndList)) {
+        // Cuộn đến dòng cuối cùng
+        SendMessage(hwndList, LVM_ENSUREVISIBLE, itemCount, TRUE);
+    } else {
+        SendMessage(hwndList, LVM_ENSUREVISIBLE, firstLine - isDel, TRUE);
+    }
+
+    // Bật lại việc vẽ lại và làm mới cửa sổ
+    SendMessage(hwndList, WM_SETREDRAW, TRUE, 0);
+    InvalidateRect(hwndList, NULL, TRUE);
 }
 
 
@@ -273,37 +354,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         LVCOLUMN lvColumn;
         lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 
-        lvColumn.pszText = (LPWSTR)L"Column 1";
+        lvColumn.pszText = (LPWSTR)L"State";
         lvColumn.cx = 200;
         lvColumn.iSubItem = 0;
         ListView_InsertColumn(hListView, 0, &lvColumn);
 
-        lvColumn.pszText = (LPWSTR)L"Column 2";
+        lvColumn.pszText = (LPWSTR)L"Host";
         lvColumn.cx = 200;
         lvColumn.iSubItem = 1;
         ListView_InsertColumn(hListView, 1, &lvColumn);
 
-        lvColumn.pszText = (LPWSTR)L"Column 3";
+        lvColumn.pszText = (LPWSTR)L"Port";
         lvColumn.cx = 260;
         lvColumn.iSubItem = 2;
         ListView_InsertColumn(hListView, 2, &lvColumn);
-
-        LVITEM lvItem;
-        lvItem.mask = LVIF_TEXT;
-
-        lvItem.iItem = 0;
-        lvItem.iSubItem = 0;
-        lvItem.pszText = (LPWSTR)L"Row 1, Col 1";
-        ListView_InsertItem(hListView, &lvItem);
-        ListView_SetItemText(hListView, 0, 1, (LPWSTR)L"Row 1, Col 2");
-        ListView_SetItemText(hListView, 0, 2, (LPWSTR)L"Row 1, Col 3");
-
-        lvItem.iItem = 1;
-        lvItem.iSubItem = 0;
-        lvItem.pszText = (LPWSTR)L"Row 2, Col 1";
-        ListView_InsertItem(hListView, &lvItem);
-        ListView_SetItemText(hListView, 1, 1, (LPWSTR)L"Row 2, Col 2");
-        ListView_SetItemText(hListView, 1, 2, (LPWSTR)L"Row 2, Col 3");
 
         break;
     }
