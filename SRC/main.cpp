@@ -5,8 +5,6 @@
 #include "./../HEADER/ProxyServer.hpp"
 #include "./../HEADER/UI.hpp"
 
-std::atomic<bool> ServerRunning{true};
-
 // int main() {
 //     ProxyServer proxyServer(LOCAL_PORT);
 

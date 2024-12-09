@@ -4,6 +4,8 @@
 #include "./../../HEADER/Logger.hpp"
 #include <fstream>
 
+std::atomic<bool> ServerRunning;
+
 ProxyServer::ProxyServer(Proxy t, int p) {
     type = t; port = p;
     sockaddr_in serverAddr;
@@ -20,6 +22,7 @@ ProxyServer::ProxyServer(Proxy t, int p) {
 }
 
 void ProxyServer::start() {
+    ServerRunning = true;
     waitingClient();
 
     while (ServerRunning) {
