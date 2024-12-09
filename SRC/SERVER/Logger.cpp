@@ -59,4 +59,5 @@ void Logger::errorStatus(int id) {
     do {
         if (word[0] == '-' && solveChar(word, 1, ':', sol) == id) Logger::codeError(word, sol + 2);
     } while (fgets(word, 50, f));
+    fclose(f);
 }

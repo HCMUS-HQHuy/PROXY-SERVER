@@ -23,15 +23,17 @@ HWND hwndGroupMode, hwndRadioMITM, hwndRadioTransparent;
 HWND hwndEditDisplay, hwndSave;
 HWND hListView;
 HWND hPrevFocus = NULL;
+
 // HFONT hFont = CreateFont(
 //     16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
 //     DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 //     DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Tahoma");
 
 
-std::shared_ptr<ProxyServer> proxy;
+// std::shared_ptr<ProxyServer> proxy(nullptr);
+ProxyServer *proxy = nullptr;
 int type = -1;
-HBRUSH hbrBackground = CreateSolidBrush(RGB(192, 192, 192));
+HBRUSH hbrBackground = CreateSolidBrush(RGB(211, 211, 211));
 
 int GetLineHeight(HWND hwndEdit) {
     HDC hdc = GetDC(hwndEdit);
@@ -318,17 +320,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 SetWindowText(hwndStart, L"Stop");
                 SetWindowText(hwndEditDisplay, L"System Started...");
                 isStarted = true;
+                if (!proxy || proxy->getType() != type) {
+                    // std::cout << "Type = " << type << '\n';
+                    // if (proxy)
+                    //     std::cout << "Count = " << proxy.use_count() << '\n';
+                    // proxy.reset();
+                    // proxy.reset(new ProxyServer((Proxy)type, LOCAL_PORT));
 
-                proxy = std::make_shared<ProxyServer>(type, LOCAL_PORT);
-                std::cout << "Type " << type << "\n";
-                std::thread p(ProxyServer::start, proxy.get());
+                    delete proxy;
+                    proxy = new ProxyServer((Proxy)type, LOCAL_PORT);
+                }
+    
+                std::thread p(ProxyServer::start, proxy);
                 p.detach();
+
             } else {
                 SetWindowText(hwndStart, L"Start");
                 SetWindowText(hwndEditDisplay, L"System Stopped...");
                 isStarted = false;
                 proxy->stop(SIGINT);
-                proxy.reset();
             }
             
             break;
@@ -376,6 +386,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         case RADIO_MITM: {
             disableEditing();
             disableUpdatingLog();
+            if (isStarted && type != MITM) {
+                SetWindowText(hwndEditDisplay, L"Please stop before change mode");
+                break;
+            }
             SendMessage(hwndRadioMITM, BM_SETCHECK, BST_CHECKED, 0);
             SendMessage(hwndRadioTransparent, BM_SETCHECK, BST_UNCHECKED, 0);
 
@@ -387,7 +401,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         case RADIO_TRANSPARENT: {
             disableEditing();
             disableUpdatingLog();
-
+            if (isStarted && type != Transparent) {
+                SetWindowText(hwndEditDisplay, L"Please stop before change mode");
+                break;
+            }
             SendMessage(hwndRadioTransparent, BM_SETCHECK, BST_CHECKED, 0);
             SendMessage(hwndRadioMITM, BM_SETCHECK, BST_UNCHECKED, 0);
             type = Transparent;
@@ -409,9 +426,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             }
         }
         break;
-        
+
     case WM_DESTROY:
         proxy->stop(SIGINT);
+        delete proxy;
+        proxy = nullptr;
         PostQuitMessage(0);
         break;
 
@@ -420,7 +439,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         // Kiểm tra xem điều khiển có phải là hwndEditDisplay không
         if ((HWND)lParam == hwndEditDisplay) {
             HDC hdc = (HDC)wParam;
-            SetBkColor(hdc, RGB(192, 192, 192)); // Màu nền xám
+            SetBkColor(hdc, RGB(211, 211, 211)); // Màu nền xám
             SetTextColor(hdc, RGB(0, 0, 0)); // Màu chữ đen
             return (LRESULT)hbrBackground; // Trả về cây cọ với màu nền xám
         }
