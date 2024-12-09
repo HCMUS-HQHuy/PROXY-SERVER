@@ -11,3 +11,4 @@ note.txt
 dependencies.txt
 *.log
 .DOC
+blacklist.txt

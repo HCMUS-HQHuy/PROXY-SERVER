@@ -9,6 +9,7 @@
 #include <string.h>
 #include <commctrl.h>
 
+
 const int WINDOW_WIDTH = 900;
 const int WINDOW_HEIGHT = 500;
 const char *logFilePath = "./proxy_errors.log";
@@ -21,6 +22,12 @@ HWND hwndStart, hwndLog, hwndBlacklist, hwndHelp;
 HWND hwndGroupMode, hwndRadioMITM, hwndRadioTransparent;
 HWND hwndEditDisplay, hwndSave;
 HWND hListView;
+
+// HFONT hFont = CreateFont(
+//     16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+//     DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+//     DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Tahoma");
+
 
 std::shared_ptr<ProxyServer> proxy;
 int type = -1;
@@ -245,11 +252,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             30, 140, 120, 20, hwnd, (HMENU)RADIO_MITM, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         hwndRadioTransparent = CreateWindow(L"BUTTON", L"Transparent", WS_VISIBLE | WS_CHILD | BS_RADIOBUTTON,
             30, 170, 120, 20, hwnd, (HMENU)RADIO_TRANSPARENT, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        hwndEditDisplay = CreateWindow(L"EDIT", L"Content", WS_VISIBLE | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL,
+        hwndEditDisplay = CreateWindow(L"EDIT", L"Content hello", WS_VISIBLE | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL,
             220, 20, 640, 200, hwnd, (HMENU)EDIT_DISPLAY, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         hwndSave = CreateWindow(L"BUTTON", L"Save", WS_VISIBLE | WS_CHILD | WS_DISABLED | BS_PUSHBUTTON,
             20, 220, 80, 30, hwnd, (HMENU)BTN_SAVE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
+        // SendMessage(hwndEditDisplay, WM_SETFONT, (WPARAM)hFont, TRUE);
+        disableEditing();
         // Tạo ListView
         hListView = CreateWindowEx(
             0, WC_LISTVIEW, NULL,
@@ -331,7 +340,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             std::wifstream file(blacklistFilePath);
             std::wstring content((std::istreambuf_iterator<wchar_t>(file)), std::istreambuf_iterator<wchar_t>());
             file.close();
-            SetWindowText(hwndEditDisplay, content.c_str());
+            SetWindowText(hwndEditDisplay, ConvertToCRLF(content).c_str());
             break;
         }
 
@@ -390,6 +399,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
 
     case WM_DESTROY:
+        proxy->stop(SIGINT);
         PostQuitMessage(0);
         break;
 
