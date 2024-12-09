@@ -63,3 +63,7 @@ SOCKET ProxyServer::acceptClient() {
     }
     return clientSocket;
 }
+
+Proxy ProxyServer::getType() {
+    return type;
+}
