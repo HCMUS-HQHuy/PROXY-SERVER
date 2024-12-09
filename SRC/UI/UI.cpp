@@ -314,13 +314,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 std::cout << "Type " << type << "\n";
                 std::thread p(ProxyServer::start, proxy.get());
                 p.detach();
-                
-
             } else {
                 SetWindowText(hwndStart, L"Start");
                 SetWindowText(hwndEditDisplay, L"System Stopped...");
                 isStarted = false;
                 proxy->stop(SIGINT);
+                proxy.reset();
             }
             
             break;
