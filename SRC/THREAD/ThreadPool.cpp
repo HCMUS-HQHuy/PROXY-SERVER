@@ -50,23 +50,6 @@ void ThreadPool::enqueue(std::shared_ptr<ClientHandler>&& p) {
     condition.notify_one();
 }
 
-bool ThreadPool::canProcessRequest(const std::string& host) {
-    std::lock_guard<std::mutex> lock(hostMutex);
-    if (hostConnections[host] >= MAX_CONNECTIONS_PER_HOST) {
-        return false;
-    }
-    ++hostConnections[host];
-    return true;
-}
-
-void ThreadPool::finishProcessingRequest(const std::string& host) {
-    std::lock_guard<std::mutex> lock(hostMutex);
-    --hostConnections[host];
-    if (hostConnections[host] == 0) {
-        hostConnections.erase(host); // Xóa host khỏi bản đồ nếu không còn kết nối
-    }
-}
-
 // Hủy pool
 ThreadPool::~ThreadPool() {
     {

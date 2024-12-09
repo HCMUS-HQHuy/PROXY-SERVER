@@ -143,13 +143,31 @@ void ClientHandler::handleMITM() {
     if (socketHandler->setSSLContexts(host) == false) return;
 
     if (blackList.isMember(host)) {
-        std::string redirectResponse = 
-            "HTTP/1.1 302 Found\r\n"
-            "Location: https://example.com\r\n"
-            "Content-Length: 0\r\n"
-            "Connection: close\r\n\r\n";
+        // std::string response = 
+        //     "HTTP/1.1 302 Found\r\n"
+        //     "Location: https://example.com\r\n"
+        //     "Content-Length: 0\r\n"
+        //     "Connection: close\r\n\r\n";
 
-        SSL_write(socketHandler->sslID[browser], redirectResponse.c_str(), redirectResponse.size());
+        std::string blockMessage = 
+            "<!DOCTYPE html>"
+            "<html>"
+            "<head><title>Website Blocked</title></head>"
+            "<body>"
+            "<h1>Access Denied</h1>"
+            "<p>The website you are trying to access (" + host + ") is blocked by the proxy server.</p>"
+            "<p>If you believe this is a mistake, please contact the administrator.</p>"
+            "</body>"
+            "</html>";
+
+        std::string response = 
+            "HTTP/1.1 403 Forbidden\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: " + std::to_string(blockMessage.size()) + "\r\n"
+            "Connection: close\r\n\r\n" + 
+            blockMessage;
+
+        SSL_write(socketHandler->sslID[browser], response.c_str(), response.size());
         std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
         return;
     }
@@ -190,12 +208,10 @@ void ClientHandler::handleMITM() {
 
         if (fds[0].revents & POLLIN) {
             RequestHandler request(socketHandler);
-            std::cerr << "IN BROWSER\n";
             request.handleRequest();
         }
         if (fds[1].revents & POLLIN) {
             ResponseHandler response(socketHandler);
-            std::cerr << "IN SERVER\n";
             response.handleResponse();
         }
     }
@@ -233,7 +249,6 @@ void ClientHandler::handleRelayData() {
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
                 Logger::errorStatus(-14);
-                // std::cerr << (t == 0 ? "BROWSER" : "REMOTE") << " HAVE SOME PROBLEM!!\n";
                 return;
             }
 

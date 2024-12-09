@@ -21,7 +21,6 @@ HttpHandler::HttpHandler() {
 }
 
 HttpHandler::~HttpHandler() {
-    // std::cerr << "in HTTP Handler END!!\n";
     delete[] buffer;
 }
 
@@ -72,7 +71,6 @@ int HttpHandler::receiveMessage(SOCKET sock, int size) {
 }
 
 void HttpHandler::handleMessage(int bytesReceived) {
-    // std::cerr << "HANDLER STEP: " << STEP << '\n';
     if (headersParsed == false) {
         header.append(buffer, bytesReceived);
         size_t headerEnd = header.find("\r\n\r\n");

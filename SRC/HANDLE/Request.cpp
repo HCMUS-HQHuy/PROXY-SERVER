@@ -34,11 +34,8 @@ int sendLargeData(SOCKET sock, const char* data, const int dataSize) {
 bool RequestHandler::handleRequest() {
     while (ServerRunning && isEndMessage() == false) {
         int bytesReceived = receiveMessage(browser);
-        // std::cerr << "RECEIVED : " << bytesReceived << '\n';
-        // printHeader();
         sendMessage(server, bytesReceived);
     }
-    // printHeader();
     return true;
 }
 
