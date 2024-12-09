@@ -1,10 +1,11 @@
-#ifndef FRONT_END_HPP
-#define FRONT_END_HPP
+#ifndef UI_HPP
+#define UI_HPP
 
 #ifndef UNICODE
 #define UNICODE
 #endif
 
+#include <winsock2.h>
 #include <windows.h>
 #include <string>
 
