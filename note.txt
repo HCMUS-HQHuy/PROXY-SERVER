@@ -1,2 +1,0 @@
-Đang có bug ngu :) 
-Không tự động chuyển hướng HTTP thành HTTPS

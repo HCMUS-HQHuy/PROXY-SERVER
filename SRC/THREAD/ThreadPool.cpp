@@ -1,5 +1,4 @@
 #include "./../../HEADER/ThreadPool.hpp"
-#include "./../../HEADER/Setting.hpp"
 #include "./../../HEADER/Logger.hpp"
 
 ThreadPool requestHandlerPool(std::thread::hardware_concurrency() * 30);
@@ -12,12 +11,12 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                 std::shared_ptr<ClientHandler> task;
                 {
                     std::unique_lock<std::mutex> lock(this->queueMutex);
-                    this->condition.wait(lock, [this] { return this->stop || !this->tasks.empty() || !ServerRunning; });
+                    this->condition.wait(lock, [this] { return this->stop || !this->tasks.empty(); });
                     // [this] được gọi khi bị notetify. 
                     // Nếu trả về true thì hoạt động lại và lock
                     // Nếu trả về false thì chờ để  notetify và unlock
 
-                    if ((this->stop && this->tasks.empty())  || !ServerRunning) return;
+                    if (this->stop && this->tasks.empty()) return;
                     
                     if (!this->tasks.empty()) {
                         task = std::move(this->tasks.front());

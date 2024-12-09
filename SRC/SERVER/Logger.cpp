@@ -52,7 +52,7 @@ void Logger::codeError(char word[], int sol) {
 }
 
 void Logger::errorStatus(int id) {
-    const char pathErrorNameRule[] = "./ErrorName_Rule.txt";
+    const char pathErrorNameRule[] = "./SRC/SERVER/ErrorName_Rule.txt";
     FILE* f = fopen(pathErrorNameRule, "r");
 
     char word[50] = ""; int sol = 0;

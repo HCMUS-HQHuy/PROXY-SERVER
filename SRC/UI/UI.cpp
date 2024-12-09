@@ -11,8 +11,8 @@
 
 const int WINDOW_WIDTH = 900;
 const int WINDOW_HEIGHT = 500;
-const char *logFilePath = "log.txt";
-const char *blacklistFilePath = "blacklist.txt";
+const char *logFilePath = "./proxy_errors.log";
+const char *blacklistFilePath = "./CONFIG/blocked_sites.txt";
 
 bool isStarted = false;
 std::atomic<bool> isUpdatingLog(false);
@@ -349,14 +349,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             disableEditing();
             disableUpdatingLog();            
 
-            SetWindowText(hwndEditDisplay, L"Help:\n- Start: Start/Stop system.\n- Choose Mode: Select mode.\n- Blacklist: Edit blocked items.\n- Log: View logs.");
+            SetWindowText(hwndEditDisplay, L"Help:\r\n- Start: Start/Stop system.\r\n- Choose Mode: Select mode.\r\n- Blacklist: Edit blocked items.\r\n- Log: View logs.");
             break;
         }
 
         case BTN_LOG: {
             disableEditing();
             enableUpdatingLog();
-            std::wifstream file("log.txt");
+            std::wifstream file(logFilePath);
             std::wstring content((std::istreambuf_iterator<wchar_t>(file)), std::istreambuf_iterator<wchar_t>());
             DisplayContent(hwndEditDisplay, content);
             SendMessage(hwndEditDisplay, EM_LINESCROLL, 0, SendMessage(hwndEditDisplay, EM_GETLINECOUNT, 0, 0));
