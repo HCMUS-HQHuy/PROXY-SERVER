@@ -22,7 +22,7 @@ HWND hwndStart, hwndLog, hwndBlacklist, hwndHelp;
 HWND hwndGroupMode, hwndRadioMITM, hwndRadioTransparent;
 HWND hwndEditDisplay, hwndSave;
 HWND hListView;
-
+HWND hPrevFocus = NULL;
 // HFONT hFont = CreateFont(
 //     16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
 //     DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
@@ -398,6 +398,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         break;
     }
 
+    case WM_ACTIVATE:
+        if (wParam == WA_INACTIVE) {
+            // Lưu lại control đang có focus trước khi mất kích hoạt
+            hPrevFocus = GetFocus();
+        } else if (wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE) {
+            // Khôi phục focus khi cửa sổ được kích hoạt
+            if (hPrevFocus && IsWindow(hPrevFocus)) {
+                SetFocus(hPrevFocus);
+                hPrevFocus = NULL; // Reset biến sau khi focus đã khôi phục
+            }
+        }
+        break;
+        
     case WM_DESTROY:
         proxy->stop(SIGINT);
         PostQuitMessage(0);
