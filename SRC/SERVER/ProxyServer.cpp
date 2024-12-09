@@ -4,8 +4,10 @@
 #include "./../../HEADER/Logger.hpp"
 #include <fstream>
 
+std::atomic<bool> ServerRunning;
+
 ProxyServer::ProxyServer(Proxy t, int p) {
-    type = t; port = p;
+    type = t; port = p; ServerRunning = true;
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;  
