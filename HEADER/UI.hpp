@@ -10,6 +10,7 @@
 #include <string>
 #include <commctrl.h>
 #include "ProxyServer.hpp"
+#include <mutex>
 // ID của các controls
 #define BTN_START 1
 #define RADIO_MITM 2
@@ -37,6 +38,7 @@
 
 
 struct PUI {
+    std::mutex mtx; 
     static WNDCLASS wc;
     HWND hwndStart, hwndLog, hwndBlacklist, hwndHelp;
     HWND hwndGroupMode, hwndRadioMITM, hwndRadioTransparent;
@@ -44,7 +46,7 @@ struct PUI {
     HWND hwndList;
     HWND hwndSave;
     HWND hwndPrevFocus = NULL;
-    HBRUSH hbrBackground = CreateSolidBrush(RGB(211, 211, 211));
+    HBRUSH hbrBackground = CreateSolidBrush(RGB(220, 220, 220));
 
     const int WINDOW_WIDTH = 900;
     const int WINDOW_HEIGHT = 500;

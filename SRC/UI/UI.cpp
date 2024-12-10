@@ -171,7 +171,8 @@ void PUI::DisplayEdit(const std::wstring& content) {
     SetWindowText(hwndEdit, content.c_str());
 }
 
-void PUI::AppendList(const std::wstring col1, const std::wstring col2, const std::wstring col3) {
+void PUI::AppendList(const std::wstring state, const std::wstring host, const std::wstring port) {
+     std::unique_lock<std::mutex> lock(mtx);
     // Tạm thời tắt việc vẽ lại để tránh giật
     SendMessage(hwndList, WM_SETREDRAW, FALSE, 0);
 
@@ -191,10 +192,10 @@ void PUI::AppendList(const std::wstring col1, const std::wstring col2, const std
 
     lvItem.iItem = SendMessage(hwndList, LVM_GETITEMCOUNT, 0, 0);
     lvItem.iSubItem = 0;
-    lvItem.pszText = (LPWSTR)col1.c_str();
+    lvItem.pszText = (LPWSTR)state.c_str();
     ListView_InsertItem(hwndList, &lvItem);
-    ListView_SetItemText(hwndList, lvItem.iItem, 1, (LPWSTR)col2.c_str());
-    ListView_SetItemText(hwndList, lvItem.iItem, 2, (LPWSTR)col3.c_str());
+    ListView_SetItemText(hwndList, lvItem.iItem, 1, (LPWSTR)host.c_str());
+    ListView_SetItemText(hwndList, lvItem.iItem, 2, (LPWSTR)port.c_str());
 
     // Kiểm tra nếu cuộn đã ở cuối, cuộn đến dòng cuối cùng
     if (this->IsAtBottomList()) {
@@ -248,7 +249,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             30, 140, 120, 20, hwnd, (HMENU)RADIO_MITM, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndRadioTransparent = CreateWindow(L"BUTTON", L"Transparent", WS_VISIBLE | WS_CHILD | BS_RADIOBUTTON,
             30, 170, 120, 20, hwnd, (HMENU)RADIO_TRANSPARENT, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        Window.hwndEdit = CreateWindow(L"EDIT", L"Content hello", WS_VISIBLE | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL,
+        Window.hwndEdit = CreateWindowEx(WS_EX_STATICEDGE, L"EDIT", L"Content hello", WS_VISIBLE | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | WS_EX_WINDOWEDGE,
             220, 20, 640, 200, hwnd, (HMENU)EDIT_DISPLAY, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndSave = CreateWindow(L"BUTTON", L"Save", WS_VISIBLE | WS_CHILD | WS_DISABLED | BS_PUSHBUTTON,
             20, 220, 80, 30, hwnd, (HMENU)BTN_SAVE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
@@ -257,7 +258,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         Window.disableEditing();
         // Tạo ListView
         Window.hwndList = CreateWindowEx(
-            0, WC_LISTVIEW, NULL,
+            WS_EX_STATICEDGE, WC_LISTVIEW, NULL,
             WS_CHILD | WS_VISIBLE | LVS_REPORT, // Chế độ "Report View"
             220, 240, 640, 200, // Vị trí và kích thước
             hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
@@ -268,17 +269,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 
         lvColumn.pszText = (LPWSTR)L"State";
-        lvColumn.cx = 200;
+        lvColumn.cx = 100;
         lvColumn.iSubItem = 0;
         ListView_InsertColumn(Window.hwndList, 0, &lvColumn);
 
         lvColumn.pszText = (LPWSTR)L"Host";
-        lvColumn.cx = 200;
+        lvColumn.cx = 400;
         lvColumn.iSubItem = 1;
         ListView_InsertColumn(Window.hwndList, 1, &lvColumn);
 
         lvColumn.pszText = (LPWSTR)L"Port";
-        lvColumn.cx = 260;
+        lvColumn.cx = 160;
         lvColumn.iSubItem = 2;
         ListView_InsertColumn(Window.hwndList, 2, &lvColumn);
 
@@ -417,7 +418,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         // Kiểm tra xem điều khiển có phải là hwndEditDisplay không
         if ((HWND)lParam == Window.hwndEdit) {
             HDC hdc = (HDC)wParam;
-            SetBkColor(hdc, RGB(211, 211, 211)); // Màu nền xám
+            SetBkColor(hdc, RGB(220, 220, 220)); // Màu nền xám
             SetTextColor(hdc, RGB(0, 0, 0)); // Màu chữ đen
             return (LRESULT)Window.hbrBackground; // Trả về cây cọ với màu nền xám
         }
