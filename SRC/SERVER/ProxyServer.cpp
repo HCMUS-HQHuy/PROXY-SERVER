@@ -28,9 +28,12 @@ void ProxyServer::start() {
     while (ServerRunning) {
         SOCKET client = acceptClient();
         if (client != INVALID_SOCKET) {
-            std::shared_ptr<ClientHandler> h = std::make_shared<ClientHandler>(type == MITM);
-            if (h->handleConnection(client))
-                requestHandlerPool.enqueue(std::move(h));
+            requestHandlerPool.enqueue(static_cast<std::function<void()>>([client, this]() mutable{
+                ClientHandler h(this->type == MITM);
+                if (h.handleConnection(client))
+                    h.handleRequest();
+            }));
+
             // ClientHandler h(client);
             // if (h.handleConnection(client)) 
             //     h.handleRequest();

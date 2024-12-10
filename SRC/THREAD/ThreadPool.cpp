@@ -8,7 +8,7 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
     for (size_t i = 0; i < numThreads; ++i) {
         workers.emplace_back([this] {
             while (true) {
-                std::shared_ptr<ClientHandler> task;
+                std::function<void()> task;
                 {
                     std::unique_lock<std::mutex> lock(this->queueMutex);
                     this->condition.wait(lock, [this] { return this->stop || !this->tasks.empty(); });
@@ -26,7 +26,7 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                 
                 if (task) {
                     try {
-                        task->handleRequest();
+                        task();
                     } catch (const std::exception& e) {
                         Logger::errorStatus(-46);
                         std::cerr << "Exception in task: " << e.what() << std::endl;
@@ -36,15 +36,15 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                 }
             }
         });
-        workers[i].detach();
     }
 }
 
 // Đưa task vào hàng đợi
-void ThreadPool::enqueue(std::shared_ptr<ClientHandler>&& p) {
+
+void ThreadPool::enqueue(std::function<void()>&& task) {
     {
         std::unique_lock<std::mutex> lock(queueMutex);
-        tasks.emplace(std::forward<std::shared_ptr<ClientHandler>>(p));
+        tasks.emplace(std::forward<std::function<void()>>(task));
     }
     condition.notify_one();
 }
@@ -56,5 +56,6 @@ ThreadPool::~ThreadPool() {
         stop = true;
     }
     condition.notify_all();
-    for (std::thread& worker : workers) if (worker.joinable()) worker.join();
+    for (std::thread& worker : workers) 
+        if (worker.joinable()) worker.join();
 }

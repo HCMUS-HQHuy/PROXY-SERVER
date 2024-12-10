@@ -10,7 +10,7 @@ private:
 public:
     RequestHandler();
     RequestHandler(SocketHandler* socketHandler);
-    bool handleRequest();
+    void handleRequest();
     bool receiveRequest(SOCKET sock);
     bool sendRequest(SOCKET sock);
 };

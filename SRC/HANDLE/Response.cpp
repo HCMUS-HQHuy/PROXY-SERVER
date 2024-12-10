@@ -6,10 +6,9 @@ ResponseHandler::ResponseHandler(SocketHandler* _socketHandler){
     HttpHandler();
 }
 
-bool ResponseHandler::handleResponse() {
+void ResponseHandler::handleResponse() {
     while (ServerRunning && isEndMessage() == false) {
         int bytesReceived = receiveMessage(server);
         sendMessage(browser, bytesReceived);
     }
-    return true;
 }

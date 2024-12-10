@@ -2,7 +2,7 @@
 
 #include "./../../HEADER/Request.hpp"
 #include "./../../HEADER/Response.hpp"
-#include "./../../HEADER/ThreadManager.hpp"
+#include "./../../HEADER/ThreadPool.hpp"
 #include "./../../HEADER/ClientHandler.hpp"
 #include "./../../HEADER/BlackList.hpp"
 #include "./../../HEADER/Logger.hpp"
@@ -78,14 +78,14 @@ bool ClientHandler::handleConnection(SOCKET sock) {
     SOCKET remote = SOCKET_ERROR;
     if ((!isMITM || port == HTTP_PORT) && blackList.isMember(host)) {
         Logger::errorStatus(-7);
-        // std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
+        std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
         AppendList(hListView, L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
         host.clear(); closesocket(sock);
         return false;
     }
 
     if (!blackList.isMember(host)) {
-        // std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
+        std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
 
         AppendList(hListView, L"Allow", std::wstring(host.begin(), host.end()), std::to_wstring(port));
     }
@@ -174,7 +174,7 @@ void ClientHandler::handleMITM() {
             blockMessage;
 
         SSL_write(socketHandler->sslID[browser], response.c_str(), response.size());
-        // std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
+        std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
         AppendList(hListView, L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
         return;
     }
@@ -208,20 +208,47 @@ void ClientHandler::handleMITM() {
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
                 Logger::errorStatus(-14);
+                if (t == 0) std::cerr << "BROWSER HAVE PROBLEM!!\n";
+                else std::cerr << "SERVER HAVE PROBLEM !!!\n";
                 return;
             }
 
         lastActivity = std::chrono::steady_clock::now();
 
         if (fds[0].revents & POLLIN) {
-            RequestHandler request(socketHandler);
-            request.handleRequest();
+            auto promise = std::make_shared<std::promise<void>>(); // Dùng shared_ptr
+            auto future = promise->get_future();
+
+            requestHandlerPool.enqueue([this, promise]() mutable {
+                try {
+                    RequestHandler request(this->socketHandler);
+                    request.handleRequest();
+                } catch (...) {
+                    // Xử lý lỗi nếu cần
+                }
+                promise->set_value(); // Báo task đã hoàn thành
+            });
+            future.wait(); // Chờ task hoàn thành
         }
+
         if (fds[1].revents & POLLIN) {
-            ResponseHandler response(socketHandler);
-            response.handleResponse();
+            auto promise = std::make_shared<std::promise<void>>(); // Dùng shared_ptr
+            auto future = promise->get_future();
+
+            requestHandlerPool.enqueue([this, promise]() mutable {
+                try {
+                    ResponseHandler response(this->socketHandler);
+                    response.handleResponse();
+                } catch (...) {
+                    // Xử lý lỗi nếu cần
+                }
+                promise->set_value(); // Báo task đã hoàn thành
+            });
+            future.wait(); // Chờ task hoàn thành
         }
+
     }
+    Sleep(10000);
 }
 
 void ClientHandler::handleRelayData() {

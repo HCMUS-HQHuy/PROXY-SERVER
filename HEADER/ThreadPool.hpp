@@ -6,14 +6,13 @@
 #include <queue>
 #include <vector>
 #include <condition_variable>
-#include <bits/shared_ptr.h>
-#include "./ClientHandler.hpp"
-#include <unordered_map>
+#include <functional>
+#include <future>
 
 class ThreadPool {
 private:
     std::vector<std::thread> workers;
-    std::queue<std::shared_ptr<ClientHandler>> tasks;
+    std::queue<std::function<void()>> tasks;
     std::mutex queueMutex;
     std::condition_variable condition;
 
@@ -21,7 +20,7 @@ private:
 public:
     ThreadPool(size_t numThreads);
     ~ThreadPool();
-    void enqueue(std::shared_ptr<ClientHandler>&& p);
+    void enqueue(std::function<void()>&& task);
 };
 
 extern ThreadPool requestHandlerPool;

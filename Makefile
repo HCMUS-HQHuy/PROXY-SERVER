@@ -45,14 +45,14 @@ clean:
 $(OBJ_DIR)/SERVER/ProxyServer.o: $(HEADER_DIR)/ProxyServer.hpp $(HEADER_DIR)/ClientHandler.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/SERVER/Logger.o: $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/BLOCKURL/BlackList.o: $(HEADER_DIR)/BlackList.hpp
-$(OBJ_DIR)/HANDLE/ClientHandler.o: $(HEADER_DIR)/ClientHandler.hpp $(HEADER_DIR)/BlackList.hpp $(HEADER_DIR)/Logger.hpp
+$(OBJ_DIR)/HANDLE/ClientHandler.o: $(HEADER_DIR)/ClientHandler.hpp $(HEADER_DIR)/BlackList.hpp $(HEADER_DIR)/Logger.hpp $(HEADER_DIR)/ThreadPool.hpp
 $(OBJ_DIR)/HANDLE/HttpHandler.o: $(HEADER_DIR)/HttpHandler.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/HANDLE/Request.o: $(HEADER_DIR)/Request.hpp $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/HttpHandler.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/HANDLE/Response.o: $(HEADER_DIR)/Response.hpp $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/HttpHandler.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/HANDLE/SocketHandler.o: $(HEADER_DIR)/SocketHandler.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/NETWORK/NetworkManager.o: $(HEADER_DIR)/NetworkManager.hpp $(HEADER_DIR)/Logger.hpp
 $(OBJ_DIR)/THREAD/ThreadManager.o: $(HEADER_DIR)/ThreadManager.hpp $(HEADER_DIR)/Logger.hpp
-$(OBJ_DIR)/THREAD/ThreadPool.o: $(HEADER_DIR)/ThreadPool.hpp $(HEADER_DIR)/ClientHandler.hpp
+$(OBJ_DIR)/THREAD/ThreadPool.o: $(HEADER_DIR)/ThreadPool.hpp
 $(OBJ_DIR)/main.o: $(HEADER_DIR)/Setting.hpp $(HEADER_DIR)/ProxyServer.hpp $(HEADER_DIR)/UI.hpp
 $(OBJ_DIR)/UI/UI.o: $(HEADER_DIR)/UI.hpp $(HEADER_DIR)/ProxyServer.hpp
 
