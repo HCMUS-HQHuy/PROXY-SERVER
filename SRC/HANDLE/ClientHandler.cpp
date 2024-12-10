@@ -190,13 +190,13 @@ void ClientHandler::handleMITM() {
 
     auto lastActivity = std::chrono::steady_clock::now();
 
+
     while (ServerRunning) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
         if (ret < 0) {
             Logger::errorStatus(-13);
             break;
-        }
-        else if (ret == 0) {
+        } else if (ret == 0) {
             const auto& currentTime = std::chrono::steady_clock::now();
             const auto& idleDuration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastActivity).count(); 
             if (idleDuration > MAX_IDLE_TIME) {
@@ -204,7 +204,7 @@ void ClientHandler::handleMITM() {
             }
             continue;
         }
-        
+
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
                 Logger::errorStatus(-14);
@@ -212,12 +212,12 @@ void ClientHandler::handleMITM() {
                 else std::cerr << "SERVER HAVE PROBLEM !!!\n";
                 return;
             }
-
+        
         lastActivity = std::chrono::steady_clock::now();
 
+        std::shared_ptr<std::future<void>> futures[2] = {nullptr, nullptr};
         if (fds[0].revents & POLLIN) {
-            auto promise = std::make_shared<std::promise<void>>(); // Dùng shared_ptr
-            auto future = promise->get_future();
+            std::promise<void>* promise = new std::promise<void>();
 
             requestHandlerPool.enqueue([this, promise]() mutable {
                 try {
@@ -228,12 +228,11 @@ void ClientHandler::handleMITM() {
                 }
                 promise->set_value(); // Báo task đã hoàn thành
             });
-            future.wait(); // Chờ task hoàn thành
+            futures[0] = std::make_shared<std::future<void>>(promise->get_future()); // Lưu future
         }
 
         if (fds[1].revents & POLLIN) {
-            auto promise = std::make_shared<std::promise<void>>(); // Dùng shared_ptr
-            auto future = promise->get_future();
+            std::promise<void>* promise = new std::promise<void>();
 
             requestHandlerPool.enqueue([this, promise]() mutable {
                 try {
@@ -244,11 +243,11 @@ void ClientHandler::handleMITM() {
                 }
                 promise->set_value(); // Báo task đã hoàn thành
             });
-            future.wait(); // Chờ task hoàn thành
+            futures[1] = std::make_shared<std::future<void>>(promise->get_future()); // Lưu future
         }
-
+        
+        for (int i = 0; i < 2; i++) if (futures[i] != nullptr) futures[i]->wait();
     }
-    Sleep(10000);
 }
 
 void ClientHandler::handleRelayData() {
