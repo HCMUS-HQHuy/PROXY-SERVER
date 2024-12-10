@@ -172,7 +172,7 @@ void PUI::DisplayEdit(const std::wstring& content) {
 }
 
 void PUI::AppendList(const std::wstring state, const std::wstring host, const std::wstring port) {
-     std::unique_lock<std::mutex> lock(mtx);
+    std::lock_guard<std::mutex> lock(mtx);
     // Tạm thời tắt việc vẽ lại để tránh giật
     SendMessage(hwndList, WM_SETREDRAW, FALSE, 0);
 
