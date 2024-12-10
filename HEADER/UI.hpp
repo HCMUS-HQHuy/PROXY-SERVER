@@ -9,10 +9,7 @@
 #include <windows.h>
 #include <string>
 #include <commctrl.h>
-
-extern const int WINDOW_WIDTH;
-extern const int WINDOW_HEIGHT;
-
+#include "ProxyServer.hpp"
 // ID của các controls
 #define BTN_START 1
 #define RADIO_MITM 2
@@ -23,20 +20,64 @@ extern const int WINDOW_HEIGHT;
 #define EDIT_DISPLAY 7
 #define BTN_SAVE 8
 #define MAX_LINES 100
-// Trạng thái của button Start
-extern bool isStarted;
+// // Trạng thái của button Start
+// extern bool isStarted;
 
-// Các HWND toàn cục
-extern HWND hwndStart, hwndLog, hwndBlacklist, hwndHelp;
-extern HWND hwndGroupMode, hwndRadioMITM, hwndRadioTransparent;
-extern HWND hwndEditDisplay;
-extern HWND hListView;
+// // Các HWND toàn cục
+// extern HWND hwndStart, hwndLog, hwndBlacklist, hwndHelp;
+// extern HWND hwndGroupMode, hwndRadioMITM, hwndRadioTransparent;
+// extern HWND hwndEditDisplay;
+// extern HWND hListView;
 
-// Prototypes
+// // Prototypes
+// LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+// void DisplayContent(HWND hwnd, const std::wstring &content);
+// void AppendContent(HWND hwndEdit, const std::wstring& content);
+// void AppendList(HWND hwndList, const std::wstring col1, const std::wstring col2, const std::wstring col3);
+
+
+struct PUI {
+    static WNDCLASS wc;
+    HWND hwndStart, hwndLog, hwndBlacklist, hwndHelp;
+    HWND hwndGroupMode, hwndRadioMITM, hwndRadioTransparent;
+    HWND hwndEdit;
+    HWND hwndList;
+    HWND hwndSave;
+    HWND hwndPrevFocus = NULL;
+    HBRUSH hbrBackground = CreateSolidBrush(RGB(211, 211, 211));
+
+    const int WINDOW_WIDTH = 900;
+    const int WINDOW_HEIGHT = 500;
+    const char *logFilePath = "./proxy_errors.log";
+    const char *blacklistFilePath = "./CONFIG/blocked_sites.txt";
+
+    bool isStarted = false;
+    std::atomic<bool> isUpdatingLog = false;
+
+    ProxyServer *proxy = nullptr;
+    int type = -1;
+
+    void disableEditing();
+    void enableEditing();
+    
+    void disableUpdatingLog();
+    void enableUpdatingLog();
+    void StartLogUpdater();
+
+    bool IsAtBottomEdit();
+    bool IsAtBottomList();
+
+    PUI();
+    void init(LRESULT CALLBACK (*WindowProc)(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam), HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+    void start();
+    void DisplayEdit(const std::wstring &content);
+    void AppendEdit(const std::wstring& content);
+    void AppendList(const std::wstring col1, const std::wstring col2, const std::wstring col3);
+};
+
+int GetLineHeight(HWND hwnd);
+
+extern PUI Window;
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-void DisplayContent(HWND hwnd, const std::wstring &content);
-void AppendContent(HWND hwndEdit, const std::wstring& content);
-void AppendList(HWND hwndList, const std::wstring col1, const std::wstring col2, const std::wstring col3);
-
 
 #endif

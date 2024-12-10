@@ -79,7 +79,7 @@ bool ClientHandler::handleConnection(SOCKET sock) {
     if ((!isMITM || port == HTTP_PORT) && blackList.isMember(host)) {
         Logger::errorStatus(-7);
         // std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
-        AppendList(hListView, L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
+        Window.AppendList(L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
         host.clear(); closesocket(sock);
         return false;
     }
@@ -87,7 +87,7 @@ bool ClientHandler::handleConnection(SOCKET sock) {
     if (!blackList.isMember(host)) {
         // std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
 
-        AppendList(hListView, L"Allow", std::wstring(host.begin(), host.end()), std::to_wstring(port));
+        Window.AppendList(L"Allow", std::wstring(host.begin(), host.end()), std::to_wstring(port));
     }
 
     remote = connectToServer();
@@ -175,7 +175,7 @@ void ClientHandler::handleMITM() {
 
         SSL_write(socketHandler->sslID[browser], response.c_str(), response.size());
         // std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
-        AppendList(hListView, L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
+        Window.AppendList(L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
         return;
     }
 
