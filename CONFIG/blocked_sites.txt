@@ -1,4 +1,3 @@
-chatgpt.com
-facebook.com
-
-youtube.com
+chatgpt.com
+example.com
+facebook.com

@@ -152,7 +152,7 @@ void PUI::AppendEdit(const std::wstring& content) {
     // Di chuyển con trỏ đến cuối và chèn nội dung mới
     int nLength = GetWindowTextLength(hwndEdit);
     SendMessage(hwndEdit, EM_SETSEL, (WPARAM)nLength, (LPARAM)nLength);
-    SendMessage(hwndEdit, EM_REPLACESEL, (WPARAM)TRUE, (LPARAM)ConvertToCRLF(content).c_str());
+    SendMessage(hwndEdit, EM_REPLACESEL, (WPARAM)TRUE, (LPARAM)content.c_str());
     SendMessage(hwndEdit, EM_SETSEL, left, right);
 
     // Điều chỉnh lại vị trí cuộn
@@ -168,7 +168,7 @@ void PUI::AppendEdit(const std::wstring& content) {
 }
 
 void PUI::DisplayEdit(const std::wstring& content) {
-    SetWindowText(hwndEdit, ConvertToCRLF(content).c_str());
+    SetWindowText(hwndEdit, content.c_str());
 }
 
 void PUI::AppendList(const std::wstring col1, const std::wstring col2, const std::wstring col3) {
@@ -210,25 +210,25 @@ void PUI::AppendList(const std::wstring col1, const std::wstring col2, const std
 }
 
 
-void PUI::StartLogUpdater() {
-    isUpdatingLog = true; // Bắt đầu cập nhật log
+// void PUI::StartLogUpdater() {
+//     isUpdatingLog = true; // Bắt đầu cập nhật log
 
-    std::thread([&]() {
-        while (isUpdatingLog) {
-            // Đọc nội dung từ file log
-            std::wifstream file(logFilePath);
-            if (file.is_open()) {
-                std::wstring content((std::istreambuf_iterator<wchar_t>(file)), std::istreambuf_iterator<wchar_t>());
-                file.close();
+//     std::thread([&]() {
+//         while (isUpdatingLog) {
+//             // Đọc nội dung từ file log
+//             std::wifstream file(logFilePath);
+//             if (file.is_open()) {
+//                 std::wstring content((std::istreambuf_iterator<wchar_t>(file)), std::istreambuf_iterator<wchar_t>());
+//                 file.close();
 
-                // Hiển thị nội dung log
-                DisplayEdit(L"Hello\r\n");
-            }
-            // Đợi 1 giây trước lần cập nhật tiếp theo
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-    }).detach(); // Tách luồng để chạy độc lập
-}
+//                 // Hiển thị nội dung log
+//                 DisplayEdit(L"Hello\r\n");
+//             }
+//             // Đợi 1 giây trước lần cập nhật tiếp theo
+//             std::this_thread::sleep_for(std::chrono::seconds(1));
+//         }
+//     }).detach(); // Tách luồng để chạy độc lập
+// }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
@@ -293,7 +293,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             Window.disableUpdatingLog();
 
             if (Window.type < 0) {
-                Window.DisplayEdit(L"Please chose mode to start\n");
+                Window.DisplayEdit(L"Please chose mode to start");
             } else if (!Window.isStarted) {
                 SetWindowText(Window.hwndStart, L"Stop");
                 SetWindowText(Window.hwndEdit, L"System Started...");
@@ -329,7 +329,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             std::wifstream file(Window.blacklistFilePath);
             std::wstring content((std::istreambuf_iterator<wchar_t>(file)), std::istreambuf_iterator<wchar_t>());
             file.close();
-            SetWindowText(Window.hwndEdit, ConvertToCRLF(content).c_str());
+            SetWindowText(Window.hwndEdit, content.c_str());
             break;
         }
 

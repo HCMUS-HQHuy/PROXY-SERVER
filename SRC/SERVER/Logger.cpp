@@ -28,7 +28,7 @@ void Logger::log_error(const char* notification, ...) {
     vfprintf(log_file, notification, args);
     va_end(args);
 
-    fprintf(log_file, "\n");
+    fprintf(log_file, "\r\n");
 
     fclose(log_file);
 }
