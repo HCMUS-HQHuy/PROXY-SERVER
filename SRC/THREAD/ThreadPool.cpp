@@ -1,7 +1,7 @@
 #include "./../../HEADER/ThreadPool.hpp"
 #include "./../../HEADER/Logger.hpp"
 
-ThreadPool requestHandlerPool(std::thread::hardware_concurrency() * 30);
+ThreadPool requestHandlerPool(std::thread::hardware_concurrency() * 80);
 // ThreadPool requestHandlerPool(1);
 // Khởi tạo pool với số luồng cố định
 ThreadPool::ThreadPool(size_t numThreads) : stop(false) {

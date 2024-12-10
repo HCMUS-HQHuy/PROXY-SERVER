@@ -137,7 +137,10 @@ SOCKET ClientHandler::connectToServer() {
         return SOCKET_ERROR;
     }
     return remoteSocket;
-} 
+}
+
+#define TIMEOUT 100
+#define MAX_IDLE_TIME 2000
 
 void ClientHandler::handleRequest() {
     if (isMITM) handleMITM();
@@ -185,11 +188,7 @@ void ClientHandler::handleMITM() {
         fds[i].events = POLLIN;  
     }
 
-    #define TIMEOUT 100
-    #define MAX_IDLE_TIME 5000
-
     auto lastActivity = std::chrono::steady_clock::now();
-
 
     while (ServerRunning) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
@@ -211,7 +210,6 @@ void ClientHandler::handleMITM() {
                 return;
             }
         
-        lastActivity = std::chrono::steady_clock::now();
 
         std::shared_ptr<std::future<void>> futures[2] = {nullptr, nullptr};
         if (fds[0].revents & POLLIN) {
@@ -243,9 +241,9 @@ void ClientHandler::handleMITM() {
             });
             futures[1] = std::make_shared<std::future<void>>(promise->get_future()); // Lưu future
         }
-
         for (int i = 0; i < 2; i++) 
             if (futures[i] != nullptr) futures[i]->wait();
+        lastActivity = std::chrono::steady_clock::now();
     }
 }
 
@@ -257,9 +255,6 @@ void ClientHandler::handleRelayData() {
         fds[i].fd = socketHandler->socketID[i];
         fds[i].events = POLLIN;  
     }
-
-    #define TIMEOUT 100
-    #define MAX_IDLE_TIME 5000
 
     auto lastActivity = std::chrono::steady_clock::now();
 
@@ -284,7 +279,6 @@ void ClientHandler::handleRelayData() {
                 return;
             }
 
-        lastActivity = std::chrono::steady_clock::now();
 
         std::shared_ptr<std::future<void>> futures[2] = {nullptr, nullptr};
         if (fds[0].revents & POLLIN) {
@@ -326,7 +320,9 @@ void ClientHandler::handleRelayData() {
             });
             futures[1] = std::make_shared<std::future<void>>(promise->get_future()); // Lưu future
         }
-        
+
+        lastActivity = std::chrono::steady_clock::now();
+
         for (int i = 0; i < 2; i++) 
             if (futures[i] != nullptr) futures[i]->wait();
     }
