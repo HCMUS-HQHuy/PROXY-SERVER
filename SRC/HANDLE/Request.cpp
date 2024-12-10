@@ -31,12 +31,11 @@ int sendLargeData(SOCKET sock, const char* data, const int dataSize) {
     return totalSent; 
 }
 
-bool RequestHandler::handleRequest() {
+void RequestHandler::handleRequest() {
     while (ServerRunning && isEndMessage() == false) {
         int bytesReceived = receiveMessage(browser);
         sendMessage(server, bytesReceived);
     }
-    return true;
 }
 
 bool RequestHandler::receiveRequest(SOCKET sock) {
