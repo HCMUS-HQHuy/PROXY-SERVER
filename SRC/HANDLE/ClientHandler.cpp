@@ -78,14 +78,14 @@ bool ClientHandler::handleConnection(SOCKET sock) {
     SOCKET remote = SOCKET_ERROR;
     if ((!isMITM || port == HTTP_PORT) && blackList.isMember(host)) {
         Logger::errorStatus(-7);
-        std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
+        // std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
         AppendList(hListView, L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
         host.clear(); closesocket(sock);
         return false;
     }
 
     if (!blackList.isMember(host)) {
-        std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
+        // std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
 
         AppendList(hListView, L"Allow", std::wstring(host.begin(), host.end()), std::to_wstring(port));
     }
@@ -174,7 +174,7 @@ void ClientHandler::handleMITM() {
             blockMessage;
 
         SSL_write(socketHandler->sslID[browser], response.c_str(), response.size());
-        std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
+        // std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
         AppendList(hListView, L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
         return;
     }
@@ -208,8 +208,6 @@ void ClientHandler::handleMITM() {
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
                 Logger::errorStatus(-14);
-                if (t == 0) std::cerr << "BROWSER HAVE PROBLEM!!\n";
-                else std::cerr << "SERVER HAVE PROBLEM !!!\n";
                 return;
             }
         
@@ -245,8 +243,9 @@ void ClientHandler::handleMITM() {
             });
             futures[1] = std::make_shared<std::future<void>>(promise->get_future()); // Lưu future
         }
-        
-        for (int i = 0; i < 2; i++) if (futures[i] != nullptr) futures[i]->wait();
+
+        for (int i = 0; i < 2; i++) 
+            if (futures[i] != nullptr) futures[i]->wait();
     }
 }
 
@@ -287,23 +286,48 @@ void ClientHandler::handleRelayData() {
 
         lastActivity = std::chrono::steady_clock::now();
 
+        std::shared_ptr<std::future<void>> futures[2] = {nullptr, nullptr};
         if (fds[0].revents & POLLIN) {
-            char buffer[BUFFER_SIZE];
-            int bytesReceived = recv(socketHandler->socketID[browser], buffer, BUFFER_SIZE, 0);
-            if (bytesReceived <= 0) {
-                Logger::errorStatus(-37);
-                break;
-            }
-            send(socketHandler->socketID[server], buffer, bytesReceived, 0);
+            std::promise<void>* promise = new std::promise<void>();
+
+            requestHandlerPool.enqueue([this, promise]() mutable {
+                try {
+                    char buffer[BUFFER_SIZE];
+                    int bytesReceived = recv(socketHandler->socketID[browser], buffer, BUFFER_SIZE, 0);
+                    if (bytesReceived <= 0) {
+                        Logger::errorStatus(-37);
+                        return;
+                    }
+                    send(socketHandler->socketID[server], buffer, bytesReceived, 0);
+                } catch (...) {
+                    // Xử lý lỗi nếu cần
+                }
+                promise->set_value(); // Báo task đã hoàn thành
+            });
+            futures[0] = std::make_shared<std::future<void>>(promise->get_future()); // Lưu future
         }
+
         if (fds[1].revents & POLLIN) {
-            char buffer[BUFFER_SIZE];
-            int bytesReceived = recv(socketHandler->socketID[server], buffer, BUFFER_SIZE, 0);
-            if (bytesReceived <= 0) {
-                Logger::errorStatus(-37);
-                break;
-            }
-            send(socketHandler->socketID[browser], buffer, bytesReceived, 0);
+            std::promise<void>* promise = new std::promise<void>();
+
+            requestHandlerPool.enqueue([this, promise]() mutable {
+                try {
+                    char buffer[BUFFER_SIZE];
+                    int bytesReceived = recv(socketHandler->socketID[server], buffer, BUFFER_SIZE, 0);
+                    if (bytesReceived <= 0) {
+                        Logger::errorStatus(-37);
+                        return;
+                    }
+                    send(socketHandler->socketID[browser], buffer, bytesReceived, 0);
+                } catch (...) {
+                    // Xử lý lỗi nếu cần
+                }
+                promise->set_value(); // Báo task đã hoàn thành
+            });
+            futures[1] = std::make_shared<std::future<void>>(promise->get_future()); // Lưu future
         }
+        
+        for (int i = 0; i < 2; i++) 
+            if (futures[i] != nullptr) futures[i]->wait();
     }
 }
