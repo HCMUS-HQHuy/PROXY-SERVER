@@ -32,8 +32,8 @@ int HttpHandler::sendMessage(Socket id, int sizeSending) {
     } else if (protocol == HTTPS) {
         bytesSent = SSL_write(socketHandler->sslID[id], buffer, sizeSending);
     }
-    if (bytesSent < 0) Logger::errorStatus(-15);
-    if (bytesSent == 0) Logger::errorStatus(-16);
+    if (bytesSent < 0) logger.logError(-15);
+    if (bytesSent == 0) logger.logError(-16);
     if (bytesSent <= 0) onFlagEnd();
     return bytesSent;
 }
@@ -46,8 +46,8 @@ int HttpHandler::receiveMessage(Socket id, int size) {
     } else if (protocol == HTTPS) {
         bytesReceived = SSL_read(socketHandler->sslID[id], buffer, size);
     }
-    if (bytesReceived < 0) Logger::errorStatus(-17);
-    if (bytesReceived == 0) Logger::errorStatus(-16);
+    if (bytesReceived < 0) logger.logError(-17);
+    if (bytesReceived == 0) logger.logError(-16);
     if (bytesReceived <= 0) {
         onFlagEnd();
         return bytesReceived;
@@ -59,8 +59,8 @@ int HttpHandler::receiveMessage(Socket id, int size) {
 
 int HttpHandler::receiveMessage(SOCKET sock, int size) {
     int bytesReceived = recv(sock, buffer, size, 0);
-    if (bytesReceived < 0) Logger::errorStatus(-17);
-    if (bytesReceived == 0) Logger::errorStatus(-16);
+    if (bytesReceived < 0) logger.logError(-17);
+    if (bytesReceived == 0) logger.logError(-16);
     if (bytesReceived <= 0) {
         onFlagEnd();
         return bytesReceived;

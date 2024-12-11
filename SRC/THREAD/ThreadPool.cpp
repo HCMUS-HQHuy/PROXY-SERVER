@@ -28,10 +28,10 @@ ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
                     try {
                         task();
                     } catch (const std::exception& e) {
-                        Logger::errorStatus(-46);
+                        logger.logError(-46);
                         std::cerr << "Exception in task: " << e.what() << std::endl;
                     } catch (...) {
-                        Logger::errorStatus(-47);
+                        logger.logError(-47);
                     }
                 }
             }
