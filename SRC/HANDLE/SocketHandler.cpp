@@ -203,7 +203,7 @@ bool SocketHandler::setSSLbrowser(const std::string& host) {
             std::cout << "Directory '" << directoryName << "' created successfully.\n";
         } else {
             Logger::errorStatus(-25);
-            std::cerr << "Failed to create directory '" << directoryName << "'.\n";
+            // std::cerr << "Failed to create directory '" << directoryName << "'.\n";
             return false;
         }
     }
@@ -265,7 +265,7 @@ bool SocketHandler::setSSLserver(const std::string& host) {
     if (SSL_connect(sslID[server]) <= 0) {
         int err = SSL_get_error(sslID[server], -1);
         Logger::errorStatus(-32);
-        std::cerr << "SSL_connect failed with error code: " << err << '\n';
+        // std::cerr << "SSL_connect failed with error code: " << err << '\n';
         ERR_print_errors_fp(stderr);
         return false;
     }
