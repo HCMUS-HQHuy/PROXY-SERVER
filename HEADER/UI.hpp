@@ -43,7 +43,7 @@
 
 struct PUI {
     std::mutex mtx; 
-    static WNDCLASS wc;
+    static WNDCLASSEX wc;
     HWND hwndStart, hwndLog, hwndBlacklist, hwndHelp;
     HWND hwndGroupMode, hwndRadioMITM, hwndRadioTransparent;
     HWND hwndEdit;

@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <ctime>
-
+#include "./../../HEADER/UI.hpp"
 #include "./../../HEADER/Logger.hpp"
 
 Logger logger("./SRC/SERVER/ErrorName_Rule.txt");
@@ -53,7 +53,7 @@ std::string Logger::getCurrentTime() {
 void Logger::logError(int errorCode) {
     std::lock_guard<std::mutex> lock(logMutex); // Đảm bảo thread-safe
 
-    std::ofstream logFile(LOG_FILE, std::ios::app);
+    std::wofstream logFile(LOG_FILE, std::ios::app);
     if (!logFile.is_open()) {
         std::cerr << "ERROR: Could not open log file: " << LOG_FILE << "\n";
         return;
@@ -64,7 +64,11 @@ void Logger::logError(int errorCode) {
         errorMessage = errorMessages[errorCode];
     }
 
-    logFile << "[" << getCurrentTime() << "] ERROR: " << errorMessage << "\r\n";
+    std::wstringstream buf;
+    buf << "[" << getCurrentTime().c_str() << "] ERROR: " << errorMessage.c_str() << "\r\n";
+
+    logFile << buf.str();
+    Window.AppendEdit(buf.str());
     logFile.close();
 }
 
@@ -72,13 +76,16 @@ void Logger::logError(int errorCode) {
 void Logger::logMessage(const std::string& message) {
     std::lock_guard<std::mutex> lock(logMutex); // Đảm bảo thread-safe
 
-    std::ofstream logFile(LOG_FILE, std::ios::app);
+    std::wofstream logFile(LOG_FILE, std::ios::app);
     if (!logFile.is_open()) {
-        std::cerr << "ERROR: Could not open log file: " << LOG_FILE << "\n";
+        std::cerr << "ERROR: Could not open log file: " << LOG_FILE << "\r\n";
         return;
     }
 
-    logFile << "[" << getCurrentTime() << "] " << message << "\r\n";
+    std::wstringstream buf;
+    buf << "[" << getCurrentTime().c_str() << "] " << message.c_str() << "\r\n";
+    logFile << buf.str();
+    Window.AppendEdit(buf.str());
     logFile.close();
 }
 
