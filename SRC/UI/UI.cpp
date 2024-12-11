@@ -78,7 +78,7 @@ void PUI::init(LRESULT CALLBACK (*WindowProc)(HWND hwnd, UINT uMsg, WPARAM wPara
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.hIcon = (HICON)LoadImage(
         NULL,
-        L"Proxy_logo.ico", // Đường dẫn đến file ico
+        L"Proxy_logo_white_background.ico", // Đường dẫn đến file ico
         IMAGE_ICON,
         32, 32,            // Kích thước icon
         LR_LOADFROMFILE    // Tải từ file
