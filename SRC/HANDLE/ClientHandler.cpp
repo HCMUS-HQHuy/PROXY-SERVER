@@ -94,7 +94,7 @@ bool ClientHandler::handleConnection(SOCKET sock) {
     if (port == HTTPS_PORT) {
         const char* response = "HTTP/1.1 200 Connection Established\r\n\r\n";
         size_t byteSent = send(sock, response, strlen(response), 0);
-        if (byteSent != strlen(response)) {
+        if (byteSent != strlen(response)) { 
             closesocket(remote); closesocket(sock);
             remote = SOCKET_ERROR; 
             Logger::errorStatus(-9);
