@@ -78,7 +78,7 @@ void PUI::init(LRESULT CALLBACK (*WindowProc)(HWND hwnd, UINT uMsg, WPARAM wPara
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.hIcon = (HICON)LoadImage(
         NULL,
-        L"Proxy_logo_white_background.ico", // Đường dẫn đến file ico
+        L"Proxy_logo.ico", // Đường dẫn đến file ico
         IMAGE_ICON,
         32, 32,            // Kích thước icon
         LR_LOADFROMFILE    // Tải từ file
@@ -412,6 +412,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         }
         break;
     }
+    
+    case WM_ACTIVATE:
+    if (wParam == WA_INACTIVE) {
+        // Lưu lại control đang có focus trước khi mất kích hoạt
+        Window.hwndPrevFocus = GetFocus();
+    } else if (wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE) {
+        // Khôi phục focus khi cửa sổ được kích hoạt
+        if (Window.hwndPrevFocus && IsWindow(Window.hwndPrevFocus)) {
+            SetFocus(Window.hwndPrevFocus);
+            Window.hwndPrevFocus = NULL; // Reset biến sau khi focus đã khôi phục
+        }
+    }
+    break;
+
     case WM_CTLCOLOREDIT: {
         HDC hdc = (HDC)wParam;
         if ((HWND)lParam == Window.hwndBlacklist) {
