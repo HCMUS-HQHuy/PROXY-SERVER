@@ -6,12 +6,16 @@
 BlackList blackList("./CONFIG/blocked_sites.txt");
 
 BlackList::BlackList(const string &path) {
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        std::cerr << "Error: Could not open blacklist file: " << path << '\n';
-        return;
-    }
+    BlockPath = path;
+    reload();
+}
 
+bool BlackList::reload() {
+    std::ifstream file(BlockPath);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open blacklist file: " << BlockPath << '\n';
+        return false;
+    }
     string url;
     while (std::getline(file, url)) {
         url.erase(url.find_last_not_of(" \t\r\n") + 1);
@@ -19,9 +23,8 @@ BlackList::BlackList(const string &path) {
             URLs.push_back(url);
         }
     }
-
     file.close();
-    // for (auto x: URLs) std::cerr << x << "\n";
+    return true;
 }
 
 bool BlackList::isMember(const string &host) {
