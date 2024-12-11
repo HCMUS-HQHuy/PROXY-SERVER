@@ -19,8 +19,12 @@
 #define BTN_HELP 5
 #define BTN_BLACKLIST 6
 #define EDIT_DISPLAY 7
-#define BTN_SAVE 8
+#define EDIT_BLACKLIST 8
+#define TITLE_BLACKLIST 9
+#define BTN_SAVE 10
 #define MAX_LINES 100
+#define IDI_ICON 101
+
 // // Trạng thái của button Start
 // extern bool isStarted;
 
@@ -49,7 +53,7 @@ struct PUI {
     HBRUSH hbrBackground = CreateSolidBrush(RGB(220, 220, 220));
 
     const int WINDOW_WIDTH = 900;
-    const int WINDOW_HEIGHT = 500;
+    const int WINDOW_HEIGHT = 510;
     const char *logFilePath = "./proxy_errors.log";
     const char *blacklistFilePath = "./CONFIG/blocked_sites.txt";
 
