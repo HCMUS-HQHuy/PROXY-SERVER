@@ -13,14 +13,14 @@
 ASN1_INTEGER* generateSerialNumber() {
     ASN1_INTEGER* serial = ASN1_INTEGER_new();
     if (!serial) {
-        Logger::errorStatus(-18);
+        logger.logError(-18);
         return nullptr;
     }
 
     // Sinh số ngẫu nhiên
     unsigned char randBytes[16];
     if (RAND_bytes(randBytes, sizeof(randBytes)) != 1) {
-        Logger::errorStatus(-19);
+        logger.logError(-19);
         ASN1_INTEGER_free(serial);
         return nullptr;
     }
@@ -83,7 +83,7 @@ bool generateCertificate(const std::string& host,
     X509_set_version(cert, 2);
     ASN1_INTEGER* serial = generateSerialNumber();
     if (!serial) {
-        Logger::errorStatus(-20);
+        logger.logError(-20);
         return false;
     }
     X509_set_serialNumber(cert, serial);
@@ -108,7 +108,7 @@ bool generateCertificate(const std::string& host,
     FILE* rootKeyFile = fopen(rootKeyPath.c_str(), "r");
     FILE* rootCertFile = fopen(rootCertPath.c_str(), "r");
     if (!rootKeyFile || !rootCertFile) {
-        Logger::errorStatus(-21);
+        logger.logError(-21);
         return false;
     }
     EVP_PKEY* rootKey = PEM_read_PrivateKey(rootKeyFile, nullptr, nullptr, nullptr);
@@ -117,7 +117,7 @@ bool generateCertificate(const std::string& host,
     fclose(rootCertFile);
 
     if (!rootKey || !rootCert) {
-        Logger::errorStatus(-22);
+        logger.logError(-22);
         return false;
     }
 
@@ -126,7 +126,7 @@ bool generateCertificate(const std::string& host,
 
     // Sign the certificate using the root key
     if (!X509_sign(cert, rootKey, EVP_sha256())) {
-        Logger::errorStatus(-23);
+        logger.logError(-23);
         return false;
     }
 
@@ -134,7 +134,7 @@ bool generateCertificate(const std::string& host,
     FILE* certFile = fopen(outputCertPath.c_str(), "w");
     FILE* keyFile = fopen(outputKeyPath.c_str(), "w");
     if (!certFile || !keyFile) {
-        Logger::errorStatus(-24);
+        logger.logError(-24);
         return false;
     }
     PEM_write_X509(certFile, cert);
@@ -202,7 +202,7 @@ bool SocketHandler::setSSLbrowser(const std::string& host) {
         if (CreateDirectoryA(directoryName.c_str(), NULL)) {
             std::cout << "Directory '" << directoryName << "' created successfully.\n";
         } else {
-            Logger::errorStatus(-25);
+            logger.logError(-25);
             // std::cerr << "Failed to create directory '" << directoryName << "'.\n";
             return false;
         }
@@ -214,7 +214,7 @@ bool SocketHandler::setSSLbrowser(const std::string& host) {
     const std::string outputCertPath = "./CERTIFICATE/GENERATED/" + host + ".crt";
 
     if (!generateCertificate(host, outputCertPath, outputKeyPath, rootKeyPath, rootCertPath)) {
-        Logger::errorStatus(-26);
+        logger.logError(-26);
         return false;
     }
 
@@ -225,12 +225,12 @@ bool SocketHandler::setSSLbrowser(const std::string& host) {
     SSL_set_fd(sslID[browser], socketID[browser]);
 
     if (SSL_get_verify_result(sslID[browser]) != X509_V_OK) {
-        Logger::errorStatus(-27);
+        logger.logError(-27);
         return false;
     }
 
     if (SSL_accept(sslID[browser]) <= 0) {
-        Logger::errorStatus(-28);
+        logger.logError(-28);
         ERR_print_errors_fp(stderr);
         return false;
     }
@@ -241,14 +241,14 @@ bool SocketHandler::setSSLserver(const std::string& host) {
     // Tạo SSL_CTX mới cho kết nối đến server
     ctxID[server] = SSL_CTX_new(TLS_client_method());
     if (!ctxID[server]) {
-        Logger::errorStatus(-29);
+        logger.logError(-29);
         return false;
     }
     
     // Tạo đối tượng SSL từ SSL_CTX
     sslID[server] = SSL_new(ctxID[server]);
     if (!sslID[server]) {
-        Logger::errorStatus(-30);
+        logger.logError(-30);
         return false;
     }
 
@@ -257,14 +257,14 @@ bool SocketHandler::setSSLserver(const std::string& host) {
 
     // Thiết lập SNI (Server Name Indication)
     if (!SSL_set_tlsext_host_name(sslID[server], host.c_str())) {
-        Logger::errorStatus(-31);
+        logger.logError(-31);
         return false;
     }
 
     // Thực hiện kết nối SSL
     if (SSL_connect(sslID[server]) <= 0) {
         int err = SSL_get_error(sslID[server], -1);
-        Logger::errorStatus(-32);
+        logger.logError(-32);
         // std::cerr << "SSL_connect failed with error code: " << err << '\n';
         ERR_print_errors_fp(stderr);
         return false;

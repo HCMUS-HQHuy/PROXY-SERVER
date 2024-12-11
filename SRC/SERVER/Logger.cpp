@@ -1,63 +1,89 @@
-#include<stdio.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <ctime>
+
 #include "./../../HEADER/Logger.hpp"
-#include "./../../HEADER/Setting.hpp"
 
-#define LOG_FILE "proxy_errors.log"
+Logger logger("./SRC/SERVER/ErrorName_Rule.txt");
 
-// Function to write log error into log file
-void Logger::log_error(const char* notification, ...) {
-    FILE* log_file = fopen(LOG_FILE, "a");
+Logger::Logger(const std::string &path):errorFilePath(path) {
+    std::ofstream logFile(LOG_FILE, std::ios::trunc);
+    if (!logFile.is_open()) {
+        std::cerr << "ERROR: Could not clear log file: " << LOG_FILE << "\n";
+    }
+    logFile.close();
+    loadErrorMessages();
+}
 
-    if (!log_file) {
-        perror("Cannot open log file\n");
+void Logger::loadErrorMessages() {
+    std::ifstream errorFile(errorFilePath);
+    if (!errorFile.is_open()) {
+        std::cerr << "ERROR: Could not open error file: " << errorFilePath << "\n";
         return;
     }
 
-    time_t now = time(NULL);
-    struct tm* local_time = localtime(&now);
-    if (!local_time) {
-        perror("Cannot get the system time\n");
-        fclose(log_file);
+    std::string line;
+    while (std::getline(errorFile, line)) {
+        if (line.empty() || line[0] == '/') continue; // Bỏ qua dòng trống và comment
+
+        std::istringstream iss(line);
+        int errorCode;
+        std::string errorMessage;
+
+        if (iss >> errorCode && std::getline(iss, errorMessage)) {
+            // Loại bỏ khoảng trắng đầu nếu có
+            if (!errorMessage.empty() && (errorMessage[0] == ' ' || errorMessage[0] == ':')) {
+                errorMessage.erase(0, 1);
+            }
+            errorMessages[errorCode] = errorMessage;
+        }
+    }
+    errorFile.close();
+}
+
+// Hàm lấy thời gian hiện tại
+std::string Logger::getCurrentTime() {
+    std::time_t now = std::time(nullptr);
+    char buf[80];
+    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+    return std::string(buf);
+}
+
+void Logger::logError(int errorCode) {
+    std::lock_guard<std::mutex> lock(logMutex); // Đảm bảo thread-safe
+
+    std::ofstream logFile(LOG_FILE, std::ios::app);
+    if (!logFile.is_open()) {
+        std::cerr << "ERROR: Could not open log file: " << LOG_FILE << "\n";
         return;
     }
 
-    fprintf(log_file, "[%d-%d-%d %d:%d:%d] ERROR: ", local_time->tm_mday, local_time->tm_mon, local_time->tm_year, local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
-
-    va_list args;
-    va_start(args, notification);
-    vfprintf(log_file, notification, args);
-    va_end(args);
-
-    fprintf(log_file, "\r\n");
-
-    fclose(log_file);
-}
-
-int Logger::solveChar(char word[], int ind, char kytu, int &sol) {
-    int result = 0;
-    while (word[ind] != kytu) {
-        result = result * 10 - (word[ind] - 48);
-        ind++;
+    std::string errorMessage = "Unknown error";
+    if (errorMessages.find(errorCode) != errorMessages.end()) {
+        errorMessage = errorMessages[errorCode];
     }
-    sol = ind;
 
-    return result;
+    logFile << "[" << getCurrentTime() << "] ERROR: " << errorMessage << "\r\n";
+    logFile.close();
 }
 
-void Logger::codeError(char word[], int sol) {
-    char sub[50] = "";
-    for (int i = sol; word[i] != '\n'; i++) sub[i - sol] = word[i];
+// Hàm log thông thường
+void Logger::logMessage(const std::string& message) {
+    std::lock_guard<std::mutex> lock(logMutex); // Đảm bảo thread-safe
 
-    Logger::log_error(sub);
+    std::ofstream logFile(LOG_FILE, std::ios::app);
+    if (!logFile.is_open()) {
+        std::cerr << "ERROR: Could not open log file: " << LOG_FILE << "\n";
+        return;
+    }
+
+    logFile << "[" << getCurrentTime() << "] " << message << "\r\n";
+    logFile.close();
 }
 
-void Logger::errorStatus(int id) {
-    const char pathErrorNameRule[] = "./SRC/SERVER/ErrorName_Rule.txt";
-    FILE* f = fopen(pathErrorNameRule, "r");
-
-    char word[50] = ""; int sol = 0;
-    do {
-        if (word[0] == '-' && solveChar(word, 1, ':', sol) == id) Logger::codeError(word, sol + 2);
-    } while (fgets(word, 50, f));
-    fclose(f);
+// Hàm thêm lỗi tùy chỉnh
+void Logger::addCustomError(int errorCode, const std::string& errorMessage) {
+    std::lock_guard<std::mutex> lock(logMutex);
+    errorMessages[errorCode] = errorMessage;
 }

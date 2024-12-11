@@ -11,7 +11,7 @@
 bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname, int& port) {
     // std::cerr << request << '\n';
     if (request.find("\r\n\r\n") == std::string::npos) {
-        Logger::errorStatus(-1);
+        logger.logError(-1);
         return false;
     }
 
@@ -19,7 +19,7 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
 
     size_t hostPos = request.find("Host: ");
     if (hostPos == std::string::npos) {
-        Logger::errorStatus(-2);
+        logger.logError(-2);
         return false;
     }
 
@@ -35,10 +35,10 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
         try {
             port = std::stoi(domain.substr(colonPos + 1));
         } catch (const std::invalid_argument&) {
-            Logger::errorStatus(-3);
+            logger.logError(-3);
             return false;
         } catch (const std::out_of_range&) {
-            Logger::errorStatus(-4);
+            logger.logError(-4);
             return false;
         }
         hostname = domain.substr(0, colonPos);
@@ -54,7 +54,7 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
     }
 
     if (hostname.empty()) {
-        Logger::errorStatus(-5);
+        logger.logError(-5);
         return false;
     }
 
@@ -77,7 +77,7 @@ bool ClientHandler::handleConnection(SOCKET sock) {
     }
     SOCKET remote = SOCKET_ERROR;
     if ((!isMITM || port == HTTP_PORT) && blackList.isMember(host)) {
-        Logger::errorStatus(-7);
+        logger.logError(-7);
         // std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
         Window.AppendList(L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
         host.clear(); closesocket(sock);
@@ -97,7 +97,7 @@ bool ClientHandler::handleConnection(SOCKET sock) {
         if (byteSent != strlen(response)) { 
             closesocket(remote); closesocket(sock);
             remote = SOCKET_ERROR; 
-            Logger::errorStatus(-9);
+            logger.logError(-9);
             return false;
         }
     }
@@ -115,13 +115,13 @@ ClientHandler::~ClientHandler() {
 SOCKET ClientHandler::connectToServer() {
     hostent* hostInfo = gethostbyname(host.c_str());
     if (hostInfo == nullptr) {
-        Logger::errorStatus(-10);
+        logger.logError(-10);
         return SOCKET_ERROR;
     }
     // Create a socket to listen for client connections
     SOCKET remoteSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (remoteSocket == INVALID_SOCKET) {
-        Logger::errorStatus(-11);
+        logger.logError(-11);
         return SOCKET_ERROR;
     }
 
@@ -132,7 +132,7 @@ SOCKET ClientHandler::connectToServer() {
     remoteAddr.sin_addr.s_addr = *((unsigned long*)hostInfo->h_addr_list[0]);
 
     if (connect(remoteSocket, (sockaddr*)&remoteAddr, sizeof(remoteAddr)) == SOCKET_ERROR) {
-        Logger::errorStatus(-12);
+        logger.logError(-12);
         closesocket(remoteSocket);
         return SOCKET_ERROR;
     }
@@ -193,7 +193,7 @@ void ClientHandler::handleMITM() {
     while (ServerRunning) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
         if (ret < 0) {
-            Logger::errorStatus(-13);
+            logger.logError(-13);
             break;
         } else if (ret == 0) {
             const auto& currentTime = std::chrono::steady_clock::now();
@@ -206,7 +206,7 @@ void ClientHandler::handleMITM() {
 
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
-                Logger::errorStatus(-14);
+                logger.logError(-14);
                 return;
             }
         
@@ -261,7 +261,7 @@ void ClientHandler::handleRelayData() {
     while (ServerRunning) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
         if (ret < 0) {
-            Logger::errorStatus(-13);
+            logger.logError(-13);
             break;
         }
         else if (ret == 0) {
@@ -275,7 +275,7 @@ void ClientHandler::handleRelayData() {
         
         for (int t = 0; t < 2; ++t)
             if (fds[t].revents & (POLLERR | POLLHUP)) {
-                Logger::errorStatus(-14);
+                logger.logError(-14);
                 return;
             }
 
@@ -289,7 +289,7 @@ void ClientHandler::handleRelayData() {
                     char buffer[BUFFER_SIZE];
                     int bytesReceived = recv(socketHandler->socketID[browser], buffer, BUFFER_SIZE, 0);
                     if (bytesReceived <= 0) {
-                        Logger::errorStatus(-37);
+                        logger.logError(-37);
                         return;
                     }
                     send(socketHandler->socketID[server], buffer, bytesReceived, 0);
@@ -309,7 +309,7 @@ void ClientHandler::handleRelayData() {
                     char buffer[BUFFER_SIZE];
                     int bytesReceived = recv(socketHandler->socketID[server], buffer, BUFFER_SIZE, 0);
                     if (bytesReceived <= 0) {
-                        Logger::errorStatus(-37);
+                        logger.logError(-37);
                         return;
                     }
                     send(socketHandler->socketID[browser], buffer, bytesReceived, 0);

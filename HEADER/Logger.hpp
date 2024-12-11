@@ -1,13 +1,27 @@
 #ifndef LOGGER_HPP
 #define LOGGER_HPP
 
+#include <string>
+#include <unordered_map>
+#include <mutex>
+
 class Logger {
 private:
-    static void log_error(const char* notification, ...);
-    static int solveChar(char word[], int ind, char kytu, int &sol);
-    static void codeError(char word[], int sol);
+    const std::string LOG_FILE="proxy_errors.log";
+    
+    std::unordered_map<int, std::string> errorMessages;
+    std::string errorFilePath;
+    std::mutex logMutex;
+
+    std::string getCurrentTime();
+    void loadErrorMessages();
 public:
-    static void errorStatus(int id);
+    Logger(const std::string &path);
+    void logError(int errorCode);
+    void logMessage(const std::string& message);
+    void addCustomError(int errorCode, const std::string& errorMessage);
 };
+
+extern Logger logger;
 
 #endif
