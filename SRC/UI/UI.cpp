@@ -263,6 +263,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             220, 240, 640, 200, // Vị trí và kích thước
             hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
         SendMessage(Window.hwndList, LVM_SETBKCOLOR, 0, (LPARAM)RGB(220, 220, 220));
+        SendMessage(Window.hwndList, LVM_SETTEXTBKCOLOR, 0, (LPARAM)RGB(220, 220, 220));
 
         // Thêm các cột và dữ liệu vào ListView
         LVCOLUMN lvColumn;
@@ -414,13 +415,39 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         break;
 
 
+    // case WM_CTLCOLOREDIT: {
+    //     // Kiểm tra xem điều khiển có phải là hwndEditDisplay không
+    //     if ((HWND)lParam == Window.hwndEdit) {
+    //         HDC hdc = (HDC)wParam;
+    //         SetBkColor(hdc, RGB(220, 220, 220)); // Màu nền xám
+    //         SetTextColor(hdc, RGB(0, 0, 0)); // Màu chữ đen
+    //         return (LRESULT)Window.hbrBackground; // Trả về cây cọ với màu nền xám
+    //     }
+    //     break;
+    // }
+
     case WM_CTLCOLOREDIT: {
-        // Kiểm tra xem điều khiển có phải là hwndEditDisplay không
+        HDC hdcEdit = (HDC)wParam;
         if ((HWND)lParam == Window.hwndEdit) {
-            HDC hdc = (HDC)wParam;
-            SetBkColor(hdc, RGB(220, 220, 220)); // Màu nền xám
-            SetTextColor(hdc, RGB(0, 0, 0)); // Màu chữ đen
-            return (LRESULT)Window.hbrBackground; // Trả về cây cọ với màu nền xám
+            // Nếu có thể chỉnh sửa
+            if (!(GetWindowLong(Window.hwndEdit, GWL_STYLE) & ES_READONLY)) {
+                SetBkColor(hdcEdit, RGB(220, 220, 220)); // Màu nền khi có thể chỉnh sửa
+                SetTextColor(hdcEdit, RGB(0, 0, 0));     // Màu chữ (đen)
+            }
+            return (LRESULT)Window.hbrBackground;
+        }
+        break;
+    }
+
+    case WM_CTLCOLORSTATIC: {
+        HDC hdcStatic = (HDC)wParam;
+        if ((HWND)lParam == Window.hwndEdit) {
+            // Nếu không thể chỉnh sửa (read-only)
+            if (GetWindowLong(Window.hwndEdit, GWL_STYLE) & ES_READONLY) {
+                SetBkColor(hdcStatic, RGB(220, 220, 220)); // Màu nền khi không chỉnh sửa
+                SetTextColor(hdcStatic, RGB(0, 0, 0)); // Màu chữ (xám nhạt)
+            }
+            return (LRESULT)Window.hbrBackground;
         }
         break;
     }
