@@ -9,29 +9,70 @@
 #include "./../../HEADER/UI.hpp"
 
 bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname, int& port) {
-    // std::cerr << request << '\n';
     if (request.find("\r\n\r\n") == std::string::npos) {
+        logger.logError(-1); // Thiếu phần kết thúc header HTTP
+        return false;
+    }
+
+    size_t firstLineEnd = request.find("\r\n");
+    if (firstLineEnd == std::string::npos) {
         logger.logError(-1);
         return false;
     }
 
-    port = (request.find("CONNECT") == 0 ? HTTPS_PORT : HTTP_PORT);
+    std::string firstLine = request.substr(0, firstLineEnd);
+    size_t connectPos = firstLine.find("CONNECT");
+    if (connectPos == 0) {
+        size_t hostStart = 8; // Sau "CONNECT "
+        while (hostStart < firstLine.size() && isspace(firstLine[hostStart])) hostStart++;
+
+        size_t hostEnd = firstLine.find(' ', hostStart);
+        if (hostEnd == std::string::npos) {
+            logger.logError(-5); // Không tìm thấy hostname hợp lệ
+            return false;
+        }
+
+        std::string domain = firstLine.substr(hostStart, hostEnd - hostStart);
+        size_t colonPos = domain.find(':');
+        if (colonPos != std::string::npos) {
+            try {
+                port = std::stoi(domain.substr(colonPos + 1));
+                hostname = domain.substr(0, colonPos);
+            } catch (const std::invalid_argument&) {
+                logger.logError(-3); // Port không hợp lệ
+                return false;
+            } catch (const std::out_of_range&) {
+                logger.logError(-4); // Port ngoài phạm vi
+                return false;
+            }
+        } else {
+            hostname = domain;
+            port = HTTPS_PORT; // Mặc định cho CONNECT
+        }
+
+        if (hostname.empty()) {
+            logger.logError(-5); // Hostname rỗng
+            return false;
+        }
+
+        return true;
+    }
 
     size_t hostPos = request.find("Host: ");
     if (hostPos == std::string::npos) {
-        logger.logError(-2);
+        logger.logError(-2); // Không tìm thấy header Host
         return false;
     }
 
-    size_t hostStart = hostPos + 6; while (isspace(request[hostStart])) hostStart++;
+    size_t hostStart = hostPos + 6;
+    while (isspace(request[hostStart])) hostStart++;
     size_t hostEnd = request.find("\r\n", hostStart);
 
     std::string domain = request.substr(hostStart, hostEnd - hostStart);
     while (!domain.empty() && isspace(domain.back())) domain.pop_back();
-    // Kiểm tra xem có chứa port hay không
+
     size_t colonPos = domain.find(':');
     if (colonPos != std::string::npos) {
-        // Lấy hostname và port từ domain
         try {
             port = std::stoi(domain.substr(colonPos + 1));
         } catch (const std::invalid_argument&) {
@@ -43,12 +84,10 @@ bool ClientHandler::parseHostAndPort(std::string request, std::string& hostname,
         }
         hostname = domain.substr(0, colonPos);
     } else {
-        // Không có port, sử dụng port mặc định
         hostname = domain;
-        port = HTTP_PORT; 
+        port = HTTP_PORT; // Mặc định cho HTTP
     }
 
-    // Loại bỏ các ký tự không hợp lệ ở cuối hostname (nếu có)
     while (!hostname.empty() && !std::isalnum(hostname.back())) {
         hostname.pop_back();
     }
