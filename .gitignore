@@ -11,4 +11,5 @@ note.txt
 dependencies.txt
 *.log
 .DOC
-blacklist.txt
+CONFIG/blocked_sites.txt
+proxy_errors.log

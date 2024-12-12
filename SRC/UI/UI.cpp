@@ -56,12 +56,15 @@ std::wstring ConvertToCRLF(const std::wstring& input) {
     return output;
 }
 
-void SaveFile(const std::string& filePath, const std::wstring& content) {
+bool SaveFile(const std::string& filePath, const std::wstring& content) {
     std::wofstream file(filePath, std::ios::trunc);
     if (file.is_open()) {
         file << content;
         file.close();
+        return true;
     }
+
+    return false;
 }
 
 PUI Window;
@@ -363,14 +366,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         case BTN_SAVE: {
             wchar_t buffer[65536];
             GetWindowText(Window.hwndBlacklist, buffer, 65536);
-            SaveFile(Window.blacklistFilePath, buffer);
+            if (!SaveFile(Window.blacklistFilePath, buffer))
+                MessageBox(hwnd, L"Failed to save blacklist file.", L"Error", MB_OK | MB_ICONERROR);
             // MessageBox(hwnd, L"Blacklist saved successfully!", L"Info", MB_OK | MB_ICONINFORMATION);
-            if (blackList.reload()) {
+            else if (blackList.reload()) {
                 MessageBox(hwnd, L"Blacklist saved successfully!", L"Info", MB_OK | MB_ICONINFORMATION);
             } else {
-                MessageBox(hwnd, L"Failed to save blacklist file. Please check file permissions or path.", L"Error", MB_OK | MB_ICONERROR);
+                MessageBox(hwnd, L"Failed to reload blacklist file.", L"Error", MB_OK | MB_ICONERROR);
             }
-            break;
             break;
         }
 
