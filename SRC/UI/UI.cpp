@@ -255,13 +255,15 @@ void PUI::AppendList(const std::wstring state, const std::wstring host, const st
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-            case WM_PAINT: {
+
+    case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
         DrawLogo(hwnd, hdc);
         EndPaint(hwnd, &ps);
         break;
     }
+    
     case WM_CREATE: {
         // Tạo các thành phần con
         Window.hwndStart = CreateWindow(L"BUTTON", L"Start", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -278,17 +280,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             30, 200, 120, 20, hwnd, (HMENU)RADIO_TRANSPARENT, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
         // Tạo hwndEdit
-        Window.hwndEdit = CreateWindowEx(WS_EX_STATICEDGE, L"EDIT", L"Content hello", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
+        Window.hwndEdit = CreateWindowEx(NULL, L"EDIT", L"Content hello", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL | WS_BORDER,
             220, 40, 440, 200, hwnd, (HMENU)EDIT_DISPLAY, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        HWND hwndTitleMessage = CreateWindowEx(WS_EX_STATICEDGE, L"STATIC", L"Message", // Văn bản hiển thị
-                                                WS_VISIBLE | WS_CHILD | SS_CENTER,
+        Window.hwndTitleMessage = CreateWindowEx(NULL, L"STATIC", L"Message", // Văn bản hiển thị
+                                                WS_VISIBLE | WS_CHILD | SS_CENTER | WS_BORDER,
                                                 220, 20, 440, 20, // Vị trí và kích thước
                                                 hwnd, (HMENU)TITLE_BLACKLIST, NULL, NULL);
         // Tạo hwndBlacklist
-        Window.hwndBlacklist = CreateWindowEx(WS_EX_STATICEDGE, L"EDIT", L"Blacklist", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | ES_LEFT | WS_VSCROLL,
+        Window.hwndBlacklist = CreateWindowEx(NULL, L"EDIT", L"Blacklist", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | ES_LEFT | WS_VSCROLL | WS_BORDER,
             670, 40, 200, 170 - 5, hwnd, (HMENU)EDIT_BLACKLIST, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        HWND hwndTitleBlacklist = CreateWindowEx(WS_EX_STATICEDGE, L"STATIC", L"Blacklist", // Văn bản hiển thị
-                                                WS_VISIBLE | WS_CHILD | SS_CENTER,
+        Window.hwndTitleBlacklist = CreateWindowEx(NULL, L"STATIC", L"Blacklist", // Văn bản hiển thị
+                                                WS_VISIBLE | WS_CHILD | SS_CENTER | WS_BORDER,
                                                 670, 20, 200, 20, // Vị trí và kích thước
                                                 hwnd, (HMENU)TITLE_BLACKLIST, NULL, NULL);
         // Tạo nút Save
@@ -304,8 +306,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
         // Tạo ListView
         Window.hwndList = CreateWindowEx(
-            WS_EX_STATICEDGE, WC_LISTVIEW, NULL,
-            WS_CHILD | WS_VISIBLE | LVS_REPORT | WS_VSCROLL, // Chế độ "Report View"
+            NULL, WC_LISTVIEW, NULL,
+            WS_CHILD | WS_VISIBLE | LVS_REPORT | WS_VSCROLL | WS_BORDER, // Chế độ "Report View"
             220, 260, 650, 200, // Vị trí và kích thước
             hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
         SendMessage(Window.hwndList, LVM_SETBKCOLOR, 0, (LPARAM)RGB(220, 220, 220));

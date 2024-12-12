@@ -52,6 +52,8 @@ struct PUI {
     HWND hwndPrevFocus = NULL;
     HBRUSH hbrBackground = CreateSolidBrush(RGB(220, 220, 220));
 
+    HWND hwndTitleMessage, hwndTitleBlacklist;
+
     const int WINDOW_WIDTH = 900;
     const int WINDOW_HEIGHT = 510;
     const char *logFilePath = "./proxy_errors.log";
