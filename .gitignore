@@ -4,7 +4,7 @@ BIN/
 BUILD/
 .vscode
 tmp.cpp
-CERTIFICATE/GENERATED
+GENERATED_CER/
 tmp.txt
 FIND.txt
 note.txt

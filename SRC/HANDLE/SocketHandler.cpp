@@ -1,6 +1,4 @@
-#include "./../../HEADER/SocketHandler.hpp"
 #include <iostream>
-#include <string>
 #include <vector>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
@@ -8,6 +6,7 @@
 #include <openssl/applink.c>
 
 #include "./../../HEADER/Logger.hpp"
+#include "./../../HEADER/SocketHandler.hpp"
 
 // Hàm tạo serial number ngẫu nhiên để tránh bị trùng lặp
 ASN1_INTEGER* generateSerialNumber() {
@@ -196,22 +195,12 @@ bool SocketHandler::setSSLContexts(const std::string &host) {
 }
 
 bool SocketHandler::setSSLbrowser(const std::string& host) {
-    std::string directoryName = "./CERTIFICATE/GENERATED";
-
-    if (GetFileAttributesA(directoryName.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        if (CreateDirectoryA(directoryName.c_str(), NULL)) {
-            std::cout << "Directory '" << directoryName << "' created successfully.\n";
-        } else {
-            logger.logError(-25);
-            // std::cerr << "Failed to create directory '" << directoryName << "'.\n";
-            return false;
-        }
-    }
+    std::string directoryName = "./GENERATED_CER/";
 
     const std::string rootKeyPath = "./CERTIFICATE/root.key";
     const std::string rootCertPath = "./CERTIFICATE/root.crt";
-    const std::string outputKeyPath = "./CERTIFICATE/GENERATED/" + host + ".key";
-    const std::string outputCertPath = "./CERTIFICATE/GENERATED/" + host + ".crt";
+    const std::string outputKeyPath = directoryName + host + ".key";
+    const std::string outputCertPath = directoryName + host + ".crt";
 
     if (!generateCertificate(host, outputCertPath, outputKeyPath, rootKeyPath, rootCertPath)) {
         logger.logError(-26);
