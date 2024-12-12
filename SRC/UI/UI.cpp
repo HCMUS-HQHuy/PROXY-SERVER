@@ -6,9 +6,11 @@
 #include <bits/shared_ptr.h>
 #include "../../HEADER/ProxyServer.hpp"
 #include "../../HEADER/Setting.hpp"
+#include "../../HEADER/BlackList.hpp"
 #include <string.h>
 #include <commctrl.h>
 #include <gdiplus.h>
+
 
 using namespace Gdiplus;
 
@@ -362,7 +364,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             wchar_t buffer[65536];
             GetWindowText(Window.hwndBlacklist, buffer, 65536);
             SaveFile(Window.blacklistFilePath, buffer);
-            MessageBox(hwnd, L"Blacklist saved successfully!", L"Info", MB_OK | MB_ICONINFORMATION);
+            // MessageBox(hwnd, L"Blacklist saved successfully!", L"Info", MB_OK | MB_ICONINFORMATION);
+            if (blackList.reload()) {
+                MessageBox(hwnd, L"Blacklist saved successfully!", L"Info", MB_OK | MB_ICONINFORMATION);
+            } else {
+                MessageBox(hwnd, L"Failed to save blacklist file. Please check file permissions or path.", L"Error", MB_OK | MB_ICONERROR);
+            }
+            break;
             break;
         }
 
