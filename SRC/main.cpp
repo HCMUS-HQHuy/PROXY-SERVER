@@ -24,9 +24,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     Window.init(WindowProc, hInstance, hPrevInstance, lpCmdLine, nCmdShow);
     Window.start();
-
-    if (!RemoveDirectoryA(directoryName.c_str())) {
-        std::cerr << "Directory deleted UNsuccessfully." << std::endl;
-    }
     return 0;
 }
