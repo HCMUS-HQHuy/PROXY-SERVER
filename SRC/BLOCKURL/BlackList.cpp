@@ -16,6 +16,7 @@ bool BlackList::reload() {
         std::cerr << "Error: Could not open blacklist file: " << BlockPath << '\n';
         return false;
     }
+    URLs.clear();
     string url;
     while (std::getline(file, url)) {
         url.erase(url.find_last_not_of(" \t\r\n") + 1);
