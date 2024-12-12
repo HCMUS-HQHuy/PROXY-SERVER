@@ -17,6 +17,7 @@ Logger::Logger(const std::string &path):errorFilePath(path) {
 }
 
 void Logger::loadErrorMessages() {
+    errorMessages.clear();
     std::ifstream errorFile(errorFilePath);
     if (!errorFile.is_open()) {
         std::cerr << "ERROR: Could not open error file: " << errorFilePath << "\n";
