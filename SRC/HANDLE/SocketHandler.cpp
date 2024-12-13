@@ -107,6 +107,8 @@ bool generateCertificate(const std::string& host,
     FILE* rootKeyFile = fopen(rootKeyPath.c_str(), "r");
     FILE* rootCertFile = fopen(rootCertPath.c_str(), "r");
     if (!rootKeyFile || !rootCertFile) {
+        fclose(rootKeyFile);
+        fclose(rootCertFile);
         logger.logError(-21);
         return false;
     }
@@ -133,6 +135,8 @@ bool generateCertificate(const std::string& host,
     FILE* certFile = fopen(outputCertPath.c_str(), "w");
     FILE* keyFile = fopen(outputKeyPath.c_str(), "w");
     if (!certFile || !keyFile) {
+        fclose(certFile);
+        fclose(keyFile);
         logger.logError(-24);
         return false;
     }
