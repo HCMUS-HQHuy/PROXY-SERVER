@@ -14,5 +14,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     Window.init(WindowProc, hInstance, hPrevInstance, lpCmdLine, nCmdShow);
     Window.start();
+
+    // Xóa thư mục và tất cả nội dung bên trong
+    directoryName += '\0'; // Kết thúc chuỗi bằng ký tự null để sử dụng với SHFileOperation
+    SHFILEOPSTRUCTA fileOp = {0};
+    fileOp.wFunc = FO_DELETE; // Thao tác xóa
+    fileOp.pFrom = directoryName.c_str(); // Tên thư mục cần xóa
+    fileOp.fFlags = FOF_NO_UI; // Không hiển thị giao diện người dùng
+
+    if (SHFileOperationA(&fileOp) != 0) {
+        std::cerr << "Error: Failed to delete directory " << directoryName << "\n";
+    } else {
+        std::cout << "Directory deleted successfully.\n";
+    }
     return 0;
 }
