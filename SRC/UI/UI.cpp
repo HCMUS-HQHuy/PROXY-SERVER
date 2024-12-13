@@ -23,7 +23,7 @@ void InitGDIPlus() {
 // Hàm xử lý vẽ ảnh logo
 void DrawLogo(HWND hwnd, HDC hdc) {
     Graphics graphics(hdc);
-    Image image(L"Proxy_logo.png");
+    Image image(L"./ASSETS/Proxy_logo.png");
     RECT rect;
     GetClientRect(hwnd, &rect);
     graphics.DrawImage(&image, rect.left, rect.top + 250, 220, 220); // Hiển thị ảnh với kích thước 200x200
@@ -83,14 +83,14 @@ void PUI::init(LRESULT CALLBACK (*WindowProc)(HWND hwnd, UINT uMsg, WPARAM wPara
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.hIcon = (HICON)LoadImage(
         NULL,
-        L"Proxy_logo_white_background.ico", // Đường dẫn đến file ico
+        L"./ASSETS/Proxy_logo_white_background.ico", // Đường dẫn đến file ico
         IMAGE_ICON,
         32, 32,            // Kích thước icon
         LR_LOADFROMFILE    // Tải từ file
     );
     wc.hIconSm = (HICON)LoadImage(
         NULL,
-        L"Proxy_logo.ico",
+        L"./ASSETS/Proxy_logo.ico",
         IMAGE_ICON,
         16, 16,
         LR_LOADFROMFILE
