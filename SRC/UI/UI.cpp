@@ -10,6 +10,39 @@
 #include <string.h>
 #include <commctrl.h>
 #include <gdiplus.h>
+#include <cwchar>  
+#include <cstring>
+
+PUI Window;
+
+const wchar_t* PrevMitmMsg = 
+    L"Follow the instructions to complete the setup for MITM mode.\r\n"
+    "- Import Certificate into system:\r\n"
+    "  + Find the root.crt file in the CERTIFICATE folder of your MyProxy installation.\r\n"
+    "  + Open \"Manage user certificates\" on your operating system.\r\n"
+    "  + Import root.crt file into the \"Trusted Root Certificate Authorities\" store.\r\n"
+
+    "- Configure Proxy Settings\r\n"
+    "  + Open the Proxy Settings on your computer.\r\n"
+    "  + Enable Manual Proxy Setup and enter the following details:\r\n"
+    "    + Host: ";
+    
+const wchar_t* PostMitmMsg = 
+    L"\r\n"
+    "    + Port: 8080\r\n"
+    "- Start and run...";
+
+const wchar_t* PrevTransMsg = 
+    L"Follow the instructions to complete the setup for Transparent mode.\r\n"
+    "- Configure Proxy Settings\r\n"
+    "  + Open the Proxy Settings on your computer.\r\n"
+    "  + Enable Manual Proxy Setup and enter the following details:\r\n"
+    "    + Host: ";
+
+const wchar_t* PostTransMsg =
+    L"\r\n"
+    "    + Port: 8080\r\n"
+    "- Start and run...";
 
 
 using namespace Gdiplus;
@@ -43,19 +76,6 @@ int GetLineHeight(HWND hwnd) {
     return tm.tmHeight;
 }
 
-std::wstring ConvertToCRLF(const std::wstring& input) {
-    std::wstring output;
-    output.reserve(input.size());
-    for (wchar_t ch : input) {
-        if (ch == L'\n') {
-            output += L"\r\n";
-        } else {
-            output += ch;
-        }
-    }
-    return output;
-}
-
 bool SaveFile(const std::string& filePath, const std::wstring& content) {
     std::wofstream file(filePath, std::ios::trunc);
     if (file.is_open()) {
@@ -67,7 +87,7 @@ bool SaveFile(const std::string& filePath, const std::wstring& content) {
     return false;
 }
 
-PUI Window;
+
 
 PUI::PUI() {
     
@@ -173,7 +193,7 @@ bool PUI::IsAtBottomList() {
         int visibleLines = rect.bottom / itemHeight;
 
         // Kiểm tra xem dòng cuối có nằm trong vùng hiển thị không
-        return (firstVisible + visibleLines >= totalItems - 1);
+        return (firstVisible + visibleLines >= totalItems);
     }
 
     return false; // Trường hợp không thể lấy thông tin kích thước item
@@ -302,7 +322,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             20, 90, 80, 30, hwnd, (HMENU)BTN_LOG, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndHelp = CreateWindow(L"BUTTON", L"Help", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
             120, 90, 80, 30, hwnd, (HMENU)BTN_HELP, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        Window.hwndGroupMode = CreateWindow(L"BUTTON", L"Choose Mode", WS_VISIBLE | WS_CHILD | BS_GROUPBOX,
+        Window.hwndGroupMode = CreateWindow(L"BUTTON", L" Mode ", WS_VISIBLE | WS_CHILD | BS_GROUPBOX,
             20, 140, 180, 100, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndRadioMITM = CreateWindow(L"BUTTON", L"MITM", WS_VISIBLE | WS_CHILD | BS_RADIOBUTTON,
             30, 170, 120, 20, hwnd, (HMENU)RADIO_MITM, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
@@ -328,6 +348,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             670 - 1, 210, 200 + 2, 30, hwnd, (HMENU)BTN_SAVE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
         SendMessage(Window.hwndEdit, EM_SETREADONLY, TRUE, 0);
+        SendMessage(Window.hwndEdit, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(3, 3));
+        SendMessage(Window.hwndBlacklist, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(3, 3));
         EnableWindow(Window.hwndSave, TRUE);
         std::wifstream file(Window.blacklistFilePath);
         std::wstring content((std::istreambuf_iterator<wchar_t>(file)), std::istreambuf_iterator<wchar_t>());
@@ -359,7 +381,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         ListView_InsertColumn(Window.hwndList, 1, &lvColumn);
 
         lvColumn.pszText = (LPWSTR)L"Port";
-        lvColumn.cx = 150;
+        lvColumn.cx = 133;
         lvColumn.iSubItem = 2;
         ListView_InsertColumn(Window.hwndList, 2, &lvColumn);
 
@@ -373,22 +395,29 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             Window.disableUpdatingLog();
 
             if (Window.type < 0) {
-                Window.DisplayEdit(L"Please choose mode to start");
+                Window.DisplayEdit(L"Please select a mode before starting the proxy server.");
             } else if (!Window.isStarted) {
+
                 SetWindowText(Window.hwndStart, L"Stop");
-                SetWindowText(Window.hwndEdit, L"System Started...");
+                std::string ip = NetworkManager::getIPv4();
+                size_t len = std::mbstowcs(nullptr, ip.c_str(), 0) + 1;  // Tính toán độ dài cần thiết
+                wchar_t* long_ip = new wchar_t[len];
+                std::mbstowcs(long_ip, ip.c_str(), len);
+                Window.DisplayEdit(std::wstring(L"Proxy server is running...\r\nListening on IP: ") +
+                    std::wstring(long_ip) + std::wstring(L"\r\nPort: 8080"));
+                delete[] long_ip;
                 Window.isStarted = true;
                 if (!Window.proxy || Window.proxy->getType() != Window.type) {
                     delete Window.proxy;
                     Window.proxy = new ProxyServer((Proxy)Window.type, LOCAL_PORT);
                 }
-    
+
                 std::thread p(ProxyServer::start, Window.proxy);
                 p.detach();
 
             } else {
                 SetWindowText(Window.hwndStart, L"Start");
-                SetWindowText(Window.hwndEdit, L"System Stopped...");
+                SetWindowText(Window.hwndEdit, L"Proxy server stopped.");
                 Window.isStarted = false;
                 Window.proxy->stop(SIGINT);
             }
@@ -430,13 +459,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             Window.disableUpdatingLog();
 
             if (Window.isStarted && Window.type != MITM) {
-                SetWindowText(Window.hwndEdit, L"Please stop before changing mode");
+                SetWindowText(Window.hwndEdit, L"Please stop the proxy server before changing the mode.");
                 break;
             }
             SendMessage(Window.hwndRadioMITM, BM_SETCHECK, BST_CHECKED, 0);
             SendMessage(Window.hwndRadioTransparent, BM_SETCHECK, BST_UNCHECKED, 0);
 
-            SetWindowText(Window.hwndEdit, L"This is help for set up MITM proxy ....");
+            std::string ip = NetworkManager::getIPv4();
+            size_t len = std::mbstowcs(nullptr, ip.c_str(), 0) + 1;  // Tính toán độ dài cần thiết
+            wchar_t* long_ip = new wchar_t[len];
+            std::mbstowcs(long_ip, ip.c_str(), len);
+            Window.DisplayEdit(std::wstring(PrevMitmMsg) +
+            std::wstring(long_ip) + std::wstring(PostMitmMsg));
+            delete[] long_ip;
             Window.type = MITM;
             break;
         }
@@ -445,11 +480,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             Window.disableUpdatingLog();
 
             if (Window.isStarted && Window.type != Transparent) {
-                SetWindowText(Window.hwndEdit, L"Please stop before changing mode");
+                SetWindowText(Window.hwndEdit, L"Please stop the proxy server before changing the mode.");
                 break;
             }
             SendMessage(Window.hwndRadioTransparent, BM_SETCHECK, BST_CHECKED, 0);
             SendMessage(Window.hwndRadioMITM, BM_SETCHECK, BST_UNCHECKED, 0);
+            std::string ip = NetworkManager::getIPv4();
+            size_t len = std::mbstowcs(nullptr, ip.c_str(), 0) + 1;  // Tính toán độ dài cần thiết
+            wchar_t* long_ip = new wchar_t[len];
+            std::mbstowcs(long_ip, ip.c_str(), len);
+            Window.DisplayEdit(std::wstring(PrevTransMsg) +
+            std::wstring(long_ip) + std::wstring(PostTransMsg));
+            delete[] long_ip;
             Window.type = Transparent;
             break;
         }
