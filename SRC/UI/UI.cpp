@@ -103,7 +103,7 @@ void PUI::init(LRESULT CALLBACK (*WindowProc)(HWND hwnd, UINT uMsg, WPARAM wPara
     HWND hwnd = CreateWindowEx(
         0,
         L"MainWindow",
-        L"Demo Application",
+        L"Proxy Server",
         (WS_OVERLAPPEDWINDOW | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME) & ~WS_MAXIMIZEBOX& ~WS_SIZEBOX & ~WS_THICKFRAME,
         CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT,
         NULL, NULL, hInstance, NULL
@@ -163,7 +163,7 @@ bool PUI::IsAtBottomList() {
     GetClientRect(hwndList, &rect);
 
     // Khởi tạo RECT cho item
-    RECT itemRect = { 0 };
+    RECT itemRect;
 
     // Tính chiều cao của một item bằng cách lấy vị trí của item đầu tiên
     if (ListView_GetItemRect(hwndList, 0, &itemRect, LVIR_BOUNDS)) {
@@ -173,7 +173,7 @@ bool PUI::IsAtBottomList() {
         int visibleLines = rect.bottom / itemHeight;
 
         // Kiểm tra xem dòng cuối có nằm trong vùng hiển thị không
-        return (firstVisible + visibleLines >= totalItems);
+        return (firstVisible + visibleLines >= totalItems - 1);
     }
 
     return false; // Trường hợp không thể lấy thông tin kích thước item
@@ -255,15 +255,45 @@ void PUI::AppendList(const std::wstring state, const std::wstring host, const st
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
-
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
         DrawLogo(hwnd, hdc);
+
+        // Bút và chổi vẽ
+        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(120, 120, 120)); // Bút viền màu xanh
+        HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH); // Không tô đầy
+        SelectObject(hdc, hPen);
+        SelectObject(hdc, hBrush);
+
+        // Vẽ khung cho hwndEdit
+        RECT rect;
+        GetWindowRect(Window.hwndEdit, &rect);
+        MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT)&rect, 2); // Chuyển tọa độ màn hình sang cửa sổ
+        Rectangle(hdc, rect.left - 1, rect.top - 1, rect.right + 1, rect.bottom + 1);
+
+        GetWindowRect(Window.hwndTitleMessage, &rect);
+        MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT)&rect, 2); // Chuyển tọa độ màn hình sang cửa sổ
+        Rectangle(hdc, rect.left - 1, rect.top - 1, rect.right + 1, rect.bottom + 1);
+
+        GetWindowRect(Window.hwndBlacklist, &rect);
+        MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT)&rect, 2); // Chuyển tọa độ màn hình sang cửa sổ
+        Rectangle(hdc, rect.left - 1, rect.top - 1, rect.right + 1, rect.bottom + 1);
+
+        GetWindowRect(Window.hwndTitleBlacklist, &rect);
+        MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT)&rect, 2); // Chuyển tọa độ màn hình sang cửa sổ
+        Rectangle(hdc, rect.left - 1, rect.top - 1, rect.right + 1, rect.bottom + 1);
+        
+        GetWindowRect(Window.hwndList, &rect);
+        MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT)&rect, 2);
+        Rectangle(hdc, rect.left - 1, rect.top - 1, rect.right + 1, rect.bottom + 1);
+
+        // Giải phóng tài nguyên
+        DeleteObject(hPen);
+
         EndPaint(hwnd, &ps);
         break;
     }
-    
     case WM_CREATE: {
         // Tạo các thành phần con
         Window.hwndStart = CreateWindow(L"BUTTON", L"Start", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -280,22 +310,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             30, 200, 120, 20, hwnd, (HMENU)RADIO_TRANSPARENT, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
         // Tạo hwndEdit
-        Window.hwndEdit = CreateWindowEx(NULL, L"EDIT", L"Content hello", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL | WS_BORDER,
+        Window.hwndEdit = CreateWindow(L"EDIT", L"Content hello", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
             220, 40, 440, 200, hwnd, (HMENU)EDIT_DISPLAY, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        Window.hwndTitleMessage = CreateWindowEx(NULL, L"STATIC", L"Message", // Văn bản hiển thị
-                                                WS_VISIBLE | WS_CHILD | SS_CENTER | WS_BORDER,
-                                                220, 20, 440, 20, // Vị trí và kích thước
+        Window.hwndTitleMessage = CreateWindow( L"STATIC", L"Message", // Văn bản hiển thị
+                                                WS_VISIBLE | WS_CHILD | SS_CENTER,
+                                                220, 20, 440, 20 - 1, // Vị trí và kích thước
                                                 hwnd, (HMENU)TITLE_BLACKLIST, NULL, NULL);
         // Tạo hwndBlacklist
-        Window.hwndBlacklist = CreateWindowEx(NULL, L"EDIT", L"Blacklist", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | ES_LEFT | WS_VSCROLL | WS_BORDER,
+        Window.hwndBlacklist = CreateWindow(L"EDIT", L"Blacklist", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | ES_LEFT | WS_VSCROLL,
             670, 40, 200, 170 - 5, hwnd, (HMENU)EDIT_BLACKLIST, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        Window.hwndTitleBlacklist = CreateWindowEx(NULL, L"STATIC", L"Blacklist", // Văn bản hiển thị
-                                                WS_VISIBLE | WS_CHILD | SS_CENTER | WS_BORDER,
-                                                670, 20, 200, 20, // Vị trí và kích thước
+        Window.hwndTitleBlacklist = CreateWindow(L"STATIC", L"Blacklist", // Văn bản hiển thị
+                                                WS_VISIBLE | WS_CHILD | SS_CENTER,
+                                                670, 20, 200, 20 - 1, // Vị trí và kích thước
                                                 hwnd, (HMENU)TITLE_BLACKLIST, NULL, NULL);
         // Tạo nút Save
         Window.hwndSave = CreateWindow(L"BUTTON", L"Save", WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-            670 - 1, 210, 200, 30, hwnd, (HMENU)BTN_SAVE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            670 - 1, 210, 200 + 2, 30, hwnd, (HMENU)BTN_SAVE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
         SendMessage(Window.hwndEdit, EM_SETREADONLY, TRUE, 0);
         EnableWindow(Window.hwndSave, TRUE);
@@ -305,9 +335,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         SetWindowText(Window.hwndBlacklist, content.c_str());
 
         // Tạo ListView
-        Window.hwndList = CreateWindowEx(
-            NULL, WC_LISTVIEW, NULL,
-            WS_CHILD | WS_VISIBLE | LVS_REPORT | WS_VSCROLL | WS_BORDER, // Chế độ "Report View"
+        Window.hwndList = CreateWindow(
+            WC_LISTVIEW, NULL,
+            WS_CHILD | WS_VISIBLE | LVS_REPORT | WS_VSCROLL | LVS_EX_FLATSB, // Chế độ "Report View"
             220, 260, 650, 200, // Vị trí và kích thước
             hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
         SendMessage(Window.hwndList, LVM_SETBKCOLOR, 0, (LPARAM)RGB(220, 220, 220));
@@ -315,6 +345,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
         // Thêm các cột và dữ liệu vào ListView
         LVCOLUMN lvColumn;
+        ZeroMemory(&lvColumn, sizeof(lvColumn)); // Reset the structure
         lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 
         lvColumn.pszText = (LPWSTR)L"State";
