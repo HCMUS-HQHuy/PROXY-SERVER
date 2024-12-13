@@ -1,0 +1,14 @@
+Follow the instructions to complete the setup for MITM mode.
+
+Import Certificate into system:
++ Find the root.crt file in the CERTIFICATE folder of your MyProxy installation.
++ Open "Manage user certificates" on your operating system.
++ Import root.crt file into the "Trusted Root Certificate Authorities" store.
+
+Configure Proxy Settings
++ Open the Proxy Settings on your computer.
++ Enable Manual Proxy Setup and enter the following details:
+    + Host: ...
+    + Port: ...
+
+Start and run...
