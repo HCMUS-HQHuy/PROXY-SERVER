@@ -13,6 +13,7 @@ protected:
 public:
     NetworkManager();
     ~NetworkManager();
+    char* getIP();
     int sendMessage(SOCKET& Socket, char* msg, int length);
     int receiveMessage(SOCKET& Socket, char* msg, int length);
     int sendLargeData(SOCKET sock, char* data, int dataSize);

@@ -1,7 +1,7 @@
 #include "./../../HEADER/NetworkManager.hpp"
-#include <iphlpapi.h>
-
 #include "./../../HEADER/Logger.hpp"
+
+#include <iphlpapi.h>
 
 NetworkManager::NetworkManager() {
     IPv4 = getIPv4();
@@ -24,6 +24,9 @@ NetworkManager::~NetworkManager() {
     WSACleanup();
     std::cerr << "NetworkManager destructed successfully!\n";
 }
+
+char* NetworkManager::getIP() { return IPv4; }
+
 int NetworkManager::sendMessage(SOCKET &Socket, char *message, int sizeMessage) {
     int bytesSent = send(Socket, message, sizeMessage, 0);
     if (bytesSent == SOCKET_ERROR) {
