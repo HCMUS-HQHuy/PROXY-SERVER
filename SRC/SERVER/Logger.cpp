@@ -5,7 +5,7 @@
 #include "./../../HEADER/UI.hpp"
 #include "./../../HEADER/Logger.hpp"
 
-Logger logger("./SRC/SERVER/ErrorName_Rule.txt");
+Logger logger("./CONFIG/ErrorName_Rule.txt");
 
 Logger::Logger(const std::string &path):errorFilePath(path) {
     std::ofstream logFile(LOG_FILE, std::ios::trunc);
