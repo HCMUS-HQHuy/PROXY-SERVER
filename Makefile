@@ -1,6 +1,6 @@
 # Variables
 COMPILER = g++
-FLAGS = -c -Wall -Wextra -Wcast-align -Wwrite-strings -Waggregate-return -O2 -std=c++17 
+FLAGS = -c -Wall -Wextra -Wcast-align -Wwrite-strings -Waggregate-return -O3 -std=c++17 
 LIBS = -lcomctl32 -lgdiplus -lgdi32 -luser32 -lws2_32 -liphlpapi -I"./HEADER" -I"C:/Program Files/OpenSSL-Win64/include" -L"C:/Program Files/OpenSSL-Win64/lib/VC/x64/MT" -lssl -lcrypto -fpermissive
 
 SRC_DIR = ./SRC
