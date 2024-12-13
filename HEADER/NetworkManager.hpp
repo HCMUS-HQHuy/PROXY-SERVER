@@ -6,14 +6,15 @@
 class NetworkManager {
 private:
     WSAData wsaData;
-    char* getIPv4();
 protected: 
-    char* IPv4;
+    string IPv4;
     SOCKET localSocket;
 public:
     NetworkManager();
     ~NetworkManager();
-    char* getIP();
+
+    static string getIPv4();
+
     int sendMessage(SOCKET& Socket, char* msg, int length);
     int receiveMessage(SOCKET& Socket, char* msg, int length);
     int sendLargeData(SOCKET sock, char* data, int dataSize);

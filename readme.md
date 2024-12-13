@@ -1,3 +1,13 @@
+# OUR OWN PROXY
+**Name:** DEMO PROXY SERVER.
+> This is a project in second year in universtiy. Throughout the project, we want to demo the ability of a proxy server, include: transfer data, catching data, control request.
+
+# Describe the project
+## GOAL:
++ Lean about computer network, apply knowledges in university into real world.
++ Leaning how a computer can connect together.
++ 
+
 # REQUIREMENT:
 > Install: https://slproweb.com/products/Win32OpenSSL.html
 

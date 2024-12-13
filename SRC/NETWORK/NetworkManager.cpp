@@ -19,13 +19,10 @@ NetworkManager::NetworkManager() {
 }
 
 NetworkManager::~NetworkManager() {
-    delete[] IPv4;
     closesocket(localSocket);
     WSACleanup();
     std::cerr << "NetworkManager destructed successfully!\n";
 }
-
-char* NetworkManager::getIP() { return IPv4; }
 
 int NetworkManager::sendMessage(SOCKET &Socket, char *message, int sizeMessage) {
     int bytesSent = send(Socket, message, sizeMessage, 0);
@@ -97,7 +94,7 @@ int NetworkManager::receiveLargeData(SOCKET sock, char* buffer, int dataSize) {
 }
 
 
-char* NetworkManager::getIPv4() {
+string NetworkManager::getIPv4() {
     char *ipAddress = new char[INET_ADDRSTRLEN]();
     ULONG bufferSize = 15000;
     PIP_ADAPTER_ADDRESSES adapterAddresses = (IP_ADAPTER_ADDRESSES*)malloc(bufferSize);
@@ -127,5 +124,6 @@ char* NetworkManager::getIPv4() {
         logger.logError(-40);
     }
     free(adapterAddresses);
-    return ipAddress;
+    string IP = string(ipAddress); delete[] ipAddress;
+    return IP;
 }
