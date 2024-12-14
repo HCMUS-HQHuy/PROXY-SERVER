@@ -12,6 +12,7 @@
 #include <gdiplus.h>
 #include <cwchar>  
 #include <cstring>
+#include <richedit.h>
 
 PUI Window;
 
@@ -59,7 +60,7 @@ void DrawLogo(HWND hwnd, HDC hdc) {
     Image image(L"./ASSETS/Proxy_logo.png");
     RECT rect;
     GetClientRect(hwnd, &rect);
-    graphics.DrawImage(&image, rect.left, rect.top + 250, 220, 220); // Hiển thị ảnh với kích thước 200x200
+    graphics.DrawImage(&image, rect.left, rect.top + 254 - 1, 220, 220); // Hiển thị ảnh với kích thước 200x200
 }
 
 int GetLineHeight(HWND hwnd) {
@@ -160,16 +161,16 @@ void PUI::enableUpdatingLog() {
     isUpdatingLog = true;
 }
 
-bool PUI::IsAtBottomEdit() {
-    int totalLines = SendMessage(hwndEdit, EM_GETLINECOUNT, 0, 0);
-    int firstVisible = SendMessage(hwndEdit, EM_GETFIRSTVISIBLELINE, 0, 0);
+// bool PUI::IsAtBottomEdit() {
+//     int totalLines = SendMessage(hwndEdit, EM_GETLINECOUNT, 0, 0);
+//     int firstVisible = SendMessage(hwndEdit, EM_GETFIRSTVISIBLELINE, 0, 0);
 
-    RECT rect;
-    GetClientRect(hwndEdit, &rect);
+//     RECT rect;
+//     GetClientRect(hwndEdit, &rect);
 
-    int visibleLines = rect.bottom / GetLineHeight(hwndEdit);
-    return (firstVisible + visibleLines >= totalLines - 1);
-}
+//     int visibleLines = rect.bottom / GetLineHeight(hwndEdit);
+//     return (firstVisible + visibleLines >= totalLines - 1);
+// }
 
 bool PUI::IsAtBottomList() {
     // Lấy tổng số item trong ListView
@@ -199,37 +200,68 @@ bool PUI::IsAtBottomList() {
     return false; // Trường hợp không thể lấy thông tin kích thước item
 }
 
+bool PUI::IsAtBottomEdit() {
+    // Lấy tổng số dòng và dòng đầu tiên nhìn thấy
+    DWORD dwLineCount = SendMessage(hwndEdit, EM_GETLINECOUNT, 0, 0);
+    DWORD dwFirstVisible = SendMessage(hwndEdit, EM_GETFIRSTVISIBLELINE, 0, 0);
+
+    RECT rect;
+    GetClientRect(hwndEdit, &rect);
+
+    // Tính số dòng hiển thị
+    int visibleLines = rect.bottom / GetLineHeight(hwndEdit);
+
+    // Kiểm tra xem có đang ở cuối hay không
+    return (dwFirstVisible + visibleLines >= dwLineCount - 1);
+}
+
+void PUI::ScrolltoEnd() {
+    int firstVisible = SendMessage(hwndEdit, EM_GETFIRSTVISIBLELINE, 0, 0);
+    int totalLines = SendMessage(hwndEdit, EM_GETLINECOUNT, 0, 0);
+
+    // Calculate visible lines in RichEdit (assumes multi-line mode)
+    RECT rc;
+    GetClientRect(hwndEdit, &rc);
+    int visibleLines = rc.bottom / GetLineHeight(hwndEdit);
+    int linesToScroll = totalLines - visibleLines - firstVisible;
+    if (linesToScroll > 0) {
+        SendMessage(hwndEdit, EM_LINESCROLL, 0, linesToScroll);
+    }
+
+}
+
 void PUI::AppendEdit(const std::wstring& content) {
     if (!isUpdatingLog) return;
     std::lock_guard<std::mutex> lock(mtx);
+
     // Tạm thời tắt việc vẽ lại để tránh giật
     SendMessage(hwndEdit, WM_SETREDRAW, FALSE, 0);
 
     // Lưu trạng thái cuộn và vị trí chọn
-    int curPos = SendMessage(hwndEdit, EM_GETFIRSTVISIBLELINE, 0, 0);
+    DWORD curPos = SendMessage(hwndEdit, EM_GETFIRSTVISIBLELINE, 0, 0);
     bool atBottom = this->IsAtBottomEdit();
     int left, right;
     SendMessage(hwndEdit, EM_GETSEL, (WPARAM)&left, (LPARAM)&right);
 
     // Di chuyển con trỏ đến cuối và chèn nội dung mới
-    int nLength = GetWindowTextLength(hwndEdit);
+    DWORD nLength = GetWindowTextLength(hwndEdit);
     SendMessage(hwndEdit, EM_SETSEL, (WPARAM)nLength, (LPARAM)nLength);
     SendMessage(hwndEdit, EM_REPLACESEL, (WPARAM)TRUE, (LPARAM)content.c_str());
     SendMessage(hwndEdit, EM_SETSEL, left, right);
 
     // Điều chỉnh lại vị trí cuộn
     if (atBottom) {
-        SendMessage(hwndEdit, EM_LINESCROLL, 0, SendMessage(hwndEdit, EM_GETLINECOUNT, 0, 0));
-    } else {
-        SendMessage(hwndEdit, EM_LINESCROLL, 0, curPos - SendMessage(hwndEdit, EM_GETFIRSTVISIBLELINE, 0, 0));
+        ScrolltoEnd();
     }
 
     // Bật lại việc vẽ lại và làm mới cửa sổ
     SendMessage(hwndEdit, WM_SETREDRAW, TRUE, 0);
     InvalidateRect(hwndEdit, NULL, TRUE);
+    UpdateWindow(hwndEdit); // Cập nhật ngay lập tức
 }
 
 void PUI::DisplayEdit(const std::wstring& content) {
+    // Nếu bạn chỉ muốn thay thế toàn bộ nội dung, có thể sử dụng SetWindowText
     SetWindowText(hwndEdit, content.c_str());
 }
 
@@ -315,6 +347,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         break;
     }
     case WM_CREATE: {
+        LoadLibrary(TEXT("Msftedit.dll"));
         // Tạo các thành phần con
         Window.hwndStart = CreateWindow(L"BUTTON", L"Start", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
             20, 20, 180, 50, hwnd, (HMENU)BTN_START, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
@@ -323,33 +356,41 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         Window.hwndHelp = CreateWindow(L"BUTTON", L"Help", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
             120, 90, 80, 30, hwnd, (HMENU)BTN_HELP, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndGroupMode = CreateWindow(L"BUTTON", L" Mode ", WS_VISIBLE | WS_CHILD | BS_GROUPBOX,
-            20, 140, 180, 100, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            20, 140, 180, 100 + 4, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndRadioMITM = CreateWindow(L"BUTTON", L"MITM", WS_VISIBLE | WS_CHILD | BS_RADIOBUTTON,
-            30, 170, 120, 20, hwnd, (HMENU)RADIO_MITM, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            30, 170 + 1, 120, 20, hwnd, (HMENU)RADIO_MITM, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndRadioTransparent = CreateWindow(L"BUTTON", L"Transparent", WS_VISIBLE | WS_CHILD | BS_RADIOBUTTON,
-            30, 200, 120, 20, hwnd, (HMENU)RADIO_TRANSPARENT, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            30, 200 + 3, 120, 20, hwnd, (HMENU)RADIO_TRANSPARENT, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
         // Tạo hwndEdit
-        Window.hwndEdit = CreateWindow(L"EDIT", L"Content hello", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
-            220, 40, 440, 200, hwnd, (HMENU)EDIT_DISPLAY, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        Window.hwndEdit = CreateWindow(MSFTEDIT_CLASS, L"Content hello", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL | ES_MULTILINE,
+            220, 40, 440, 200 + 4, hwnd, (HMENU)EDIT_DISPLAY, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndTitleMessage = CreateWindow( L"STATIC", L"Message", // Văn bản hiển thị
                                                 WS_VISIBLE | WS_CHILD | SS_CENTER,
                                                 220, 20, 440, 20 - 1, // Vị trí và kích thước
                                                 hwnd, (HMENU)TITLE_BLACKLIST, NULL, NULL);
         // Tạo hwndBlacklist
-        Window.hwndBlacklist = CreateWindow(L"EDIT", L"Blacklist", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | ES_LEFT | WS_VSCROLL,
-            670, 40, 200, 170 - 5, hwnd, (HMENU)EDIT_BLACKLIST, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        Window.hwndBlacklist = CreateWindow(MSFTEDIT_CLASS, L"Blacklist", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | ES_LEFT | WS_VSCROLL | ES_MULTILINE,
+            670, 40, 200, 170, hwnd, (HMENU)EDIT_BLACKLIST, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndTitleBlacklist = CreateWindow(L"STATIC", L"Blacklist", // Văn bản hiển thị
                                                 WS_VISIBLE | WS_CHILD | SS_CENTER,
                                                 670, 20, 200, 20 - 1, // Vị trí và kích thước
                                                 hwnd, (HMENU)TITLE_BLACKLIST, NULL, NULL);
         // Tạo nút Save
         Window.hwndSave = CreateWindow(L"BUTTON", L"Save", WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-            670 - 1, 210, 200 + 2, 30, hwnd, (HMENU)BTN_SAVE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+            670 - 1, 210 + 4, 200 + 2, 30, hwnd, (HMENU)BTN_SAVE, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
+        // RECT rc;
+        // SendMessage(Window.hwndEdit, EM_GETRECT, 0, (LPARAM)&rc);  // Lấy vùng hiển thị hiện tại
+        // rc.top += 2;  // Cập nhật lề trên với giá trị margin mới
+        
+        // // Gửi thông điệp EM_SETRECT để cập nhật lề trên
+        // SendMessage(Window.hwndEdit, EM_SETRECT, 0, (LPARAM)&rc);
         SendMessage(Window.hwndEdit, EM_SETREADONLY, TRUE, 0);
-        SendMessage(Window.hwndEdit, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(3, 3));
-        SendMessage(Window.hwndBlacklist, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(3, 3));
+        SendMessage(Window.hwndEdit, EM_SETBKGNDCOLOR, 0, (LPARAM)RGB(220, 220, 220));
+        SendMessage(Window.hwndBlacklist, EM_SETBKGNDCOLOR, 0, (LPARAM)RGB(220, 220, 220));
+        SendMessage(Window.hwndEdit, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(4, 4));
+        SendMessage(Window.hwndBlacklist, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(4, 4));
         EnableWindow(Window.hwndSave, TRUE);
         std::wifstream file(Window.blacklistFilePath);
         std::wstring content((std::istreambuf_iterator<wchar_t>(file)), std::istreambuf_iterator<wchar_t>());
@@ -360,7 +401,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         Window.hwndList = CreateWindow(
             WC_LISTVIEW, NULL,
             WS_CHILD | WS_VISIBLE | LVS_REPORT | WS_VSCROLL | LVS_EX_FLATSB, // Chế độ "Report View"
-            220, 260, 650, 200, // Vị trí và kích thước
+            220, 260 + 4, 650, 200 - 2, // Vị trí và kích thước
             hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
         SendMessage(Window.hwndList, LVM_SETBKCOLOR, 0, (LPARAM)RGB(220, 220, 220));
         SendMessage(Window.hwndList, LVM_SETTEXTBKCOLOR, 0, (LPARAM)RGB(220, 220, 220));
@@ -403,8 +444,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 size_t len = std::mbstowcs(nullptr, ip.c_str(), 0) + 1;  // Tính toán độ dài cần thiết
                 wchar_t* long_ip = new wchar_t[len];
                 std::mbstowcs(long_ip, ip.c_str(), len);
-                Window.DisplayEdit(std::wstring(L"Proxy server is running...\r\nListening on IP: ") +
-                    std::wstring(long_ip) + std::wstring(L"\r\nPort: 8080"));
+                Window.DisplayEdit(std::wstring(L"Proxy server is listening on IPv4: ") +
+                    std::wstring(long_ip) + std::wstring(L"\r\nPort: 8080...\r\n(local)\r\nUse loopback IPaddress: 127.0.0.1\r\nPort: 8080..."));
                 delete[] long_ip;
                 Window.isStarted = true;
                 if (!Window.proxy || Window.proxy->getType() != Window.type) {
@@ -451,7 +492,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             std::wifstream file(Window.logFilePath);
             std::wstring content((std::istreambuf_iterator<wchar_t>(file)), std::istreambuf_iterator<wchar_t>());
             Window.DisplayEdit(content);
-            SendMessage(Window.hwndEdit, EM_LINESCROLL, 0, SendMessage(Window.hwndEdit, EM_GETLINECOUNT, 0, 0));
+            // SendMessage(Window.hwndEdit, EM_LINESCROLL, 0, SendMessage(Window.hwndEdit, EM_GETLINECOUNT, 0, 0));
+            Window.ScrolltoEnd();
             break;
         }
 
@@ -512,37 +554,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     break;
 
-    case WM_CTLCOLOREDIT: {
-        HDC hdc = (HDC)wParam;
-        if ((HWND)lParam == Window.hwndBlacklist) {
-            // Nếu có thể chỉnh sửa
-            if (!(GetWindowLong(Window.hwndBlacklist, GWL_STYLE) & ES_READONLY)) {
-                SetBkColor(hdc, RGB(220, 220, 220)); // Màu nền khi có thể chỉnh sửa
-                SetTextColor(hdc, RGB(0, 0, 0));     // Màu chữ (đen)
-            }
-            return (LRESULT)Window.hbrBackground;
-        }
-        break;
-    }
-
-    case WM_CTLCOLORSTATIC: {
-        HDC hdc = (HDC)wParam;
-        if ((HWND)lParam == Window.hwndEdit) {
-            // Nếu không thể chỉnh sửa (read-only)
-            if (GetWindowLong(Window.hwndEdit, GWL_STYLE) & ES_READONLY) {
-                SetBkColor(hdc, RGB(220, 220, 220)); // Màu nền khi không chỉnh sửa
-                SetTextColor(hdc, RGB(0, 0, 0)); // Màu chữ (xám nhạt)
-            }
-            return (LRESULT)Window.hbrBackground;
-        }
-        break;
-    }
-
     case WM_DESTROY:
         Window.proxy->stop(SIGINT);
         delete Window.proxy;
         Window.proxy = nullptr;
-        requestHandlerPool.~ThreadPool();
         PostQuitMessage(0);
         break;
 
