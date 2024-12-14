@@ -11,6 +11,7 @@
 #include <commctrl.h>
 #include "ProxyServer.hpp"
 #include <mutex>
+#include "ThreadPool.hpp"
 // ID của các controls
 #define BTN_START 1
 #define RADIO_MITM 2
@@ -55,7 +56,7 @@ struct PUI {
     HWND hwndTitleMessage, hwndTitleBlacklist;
 
     const int WINDOW_WIDTH = 900;
-    const int WINDOW_HEIGHT = 510;
+    const int WINDOW_HEIGHT = 515;
     const char *logFilePath = "./proxy_errors.log";
     const char *blacklistFilePath = "./CONFIG/blocked_sites.txt";
 
@@ -74,6 +75,7 @@ struct PUI {
 
     bool IsAtBottomEdit();
     bool IsAtBottomList();
+    void ScrolltoEnd();
 
     PUI();
     void init(LRESULT CALLBACK (*WindowProc)(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam), HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
