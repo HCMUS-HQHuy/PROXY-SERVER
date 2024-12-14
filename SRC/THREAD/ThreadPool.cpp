@@ -2,7 +2,7 @@
 #include "./../../HEADER/Logger.hpp"
 
 ThreadPool requestHandlerPool(std::thread::hardware_concurrency() * 10);
-// ThreadPool requestHandlerPool(1);
+// ThreadPool requestHandlerPool(6);
 // Khởi tạo pool với số luồng cố định
 ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
     for (size_t i = 0; i < numThreads; ++i) {
@@ -58,4 +58,5 @@ ThreadPool::~ThreadPool() {
     condition.notify_all();
     for (std::thread& worker : workers) 
         if (worker.joinable()) worker.join();
+        else std::cerr << "HQH\n";
 }

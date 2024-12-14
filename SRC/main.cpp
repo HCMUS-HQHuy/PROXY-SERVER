@@ -3,6 +3,7 @@
 #endif
 #include "./../HEADER/ProxyServer.hpp"
 #include "./../HEADER/UI.hpp"
+#include "./../HEADER/ThreadPool.hpp"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     // FreeConsole();

@@ -68,48 +68,67 @@ bool generateCertificate(const std::string& host,
                          const std::string& outputKeyPath,
                          const std::string& rootKeyPath,
                          const std::string& rootCertPath) {
-    if (fopen(outputCertPath.c_str(), "r")) return true;
-    const int keyBits = 2048; // RSA key length
-    const int validityDays = 365; // Certificate validity in days
+    FILE* f = fopen(outputCertPath.c_str(), "r");
+    if (f != nullptr) {
+        logger.logMessage("Certificate already exists.");
+        fclose(f);
+        return true;
+    }
 
-    // Generate RSA private key
-    RSA* rsaKey = RSA_generate_key(keyBits, RSA_F4, nullptr, nullptr);
+    const int keyBits = 2048;
+    const int validityDays = 365;
+
+    RSA* rsaKey = RSA_new();
+    BIGNUM* e = BN_new();
+    BN_set_word(e, RSA_F4);
+    if (!RSA_generate_key_ex(rsaKey, keyBits, e, nullptr)) {
+        logger.logError(-25);
+        BN_free(e);
+        RSA_free(rsaKey);
+        return false;
+    }
+    BN_free(e);
     EVP_PKEY* privateKey = EVP_PKEY_new();
     EVP_PKEY_assign_RSA(privateKey, rsaKey);
 
-    // Create a new certificate
     X509* cert = X509_new();
     X509_set_version(cert, 2);
     ASN1_INTEGER* serial = generateSerialNumber();
     if (!serial) {
         logger.logError(-20);
+        EVP_PKEY_free(privateKey);
+        X509_free(cert);
         return false;
     }
     X509_set_serialNumber(cert, serial);
     ASN1_INTEGER_free(serial);
-    
+
     X509_gmtime_adj(X509_get_notBefore(cert), 0);
     X509_gmtime_adj(X509_get_notAfter(cert), validityDays * 24 * 60 * 60);
 
-    // Set certificate subject name
     X509_NAME* name = X509_get_subject_name(cert);
     X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (const unsigned char*)host.c_str(), -1, -1, 0);
     X509_set_subject_name(cert, name);
-
-    // Set public key
     X509_set_pubkey(cert, privateKey);
 
-    // Add SAN extension
     X509_EXTENSION* sanExtension = addSAN(host);
+    if (!sanExtension) {
+        logger.logError(-26);
+        EVP_PKEY_free(privateKey);
+        X509_free(cert);
+        return false;
+    }
     X509_add_ext(cert, sanExtension, -1);
+    X509_EXTENSION_free(sanExtension);
 
-    // Load root key and root certificate
     FILE* rootKeyFile = fopen(rootKeyPath.c_str(), "r");
     FILE* rootCertFile = fopen(rootCertPath.c_str(), "r");
     if (!rootKeyFile || !rootCertFile) {
-        fclose(rootKeyFile);
-        fclose(rootCertFile);
+        if (rootKeyFile) fclose(rootKeyFile);
+        if (rootCertFile) fclose(rootCertFile);
         logger.logError(-21);
+        EVP_PKEY_free(privateKey);
+        X509_free(cert);
         return false;
     }
     EVP_PKEY* rootKey = PEM_read_PrivateKey(rootKeyFile, nullptr, nullptr, nullptr);
@@ -118,26 +137,34 @@ bool generateCertificate(const std::string& host,
     fclose(rootCertFile);
 
     if (!rootKey || !rootCert) {
+        if (rootKey) EVP_PKEY_free(rootKey);
+        if (rootCert) X509_free(rootCert);
         logger.logError(-22);
+        EVP_PKEY_free(privateKey);
+        X509_free(cert);
         return false;
     }
 
-    // Set issuer name to root certificate's subject name
     X509_set_issuer_name(cert, X509_get_subject_name(rootCert));
-
-    // Sign the certificate using the root key
     if (!X509_sign(cert, rootKey, EVP_sha256())) {
         logger.logError(-23);
+        EVP_PKEY_free(privateKey);
+        X509_free(cert);
+        EVP_PKEY_free(rootKey);
+        X509_free(rootCert);
         return false;
     }
 
-    // Save the generated certificate and private key
     FILE* certFile = fopen(outputCertPath.c_str(), "w");
     FILE* keyFile = fopen(outputKeyPath.c_str(), "w");
     if (!certFile || !keyFile) {
-        fclose(certFile);
-        fclose(keyFile);
+        if (certFile) fclose(certFile);
+        if (keyFile) fclose(keyFile);
         logger.logError(-24);
+        EVP_PKEY_free(privateKey);
+        X509_free(cert);
+        EVP_PKEY_free(rootKey);
+        X509_free(rootCert);
         return false;
     }
     PEM_write_X509(certFile, cert);
@@ -145,13 +172,11 @@ bool generateCertificate(const std::string& host,
     fclose(certFile);
     fclose(keyFile);
 
-    // Free resources
     EVP_PKEY_free(privateKey);
     X509_free(cert);
     EVP_PKEY_free(rootKey);
     X509_free(rootCert);
 
-    // std::cout << "Certificate generated successfully for " << host << ".\n";
     return true;
 }
 
@@ -169,7 +194,7 @@ SSL_CTX* createSSLContext(const char* certFile, const char* keyFile) {
 
 SocketHandler::SocketHandler(SOCKET fromBrowser, SOCKET fromRemote, bool isHTTPS) {
     sslID[browser] = sslID[server] = nullptr;
-    ctxID[browser] = ctxID[server] = nullptr; // Cần giải thích vì sao nêu không có cái này thì việc giải phóng gặp lỗi.
+    ctxID[browser] = ctxID[server] = nullptr; 
     socketID[browser] = fromBrowser;
     socketID[server] = fromRemote;
     protocol = (isHTTPS ? HTTPS : HTTP);
@@ -178,12 +203,20 @@ SocketHandler::SocketHandler(SOCKET fromBrowser, SOCKET fromRemote, bool isHTTPS
 SocketHandler::~SocketHandler() {
     for (int i: {0, 1}) {
         if (protocol == HTTPS) {
-            SSL_shutdown(sslID[i]);
-            SSL_CTX_free(ctxID[i]);
-            SSL_free(sslID[i]);
-            sslID[i] = nullptr; 
-            ctxID[i] = nullptr;
+            if (sslID[i]) {
+                SSL_shutdown(sslID[i]);
+                SSL_free(sslID[i]);
+                sslID[i] = nullptr;
+            }
+            if (ctxID[i]) {
+                SSL_CTX_free(ctxID[i]);
+                ctxID[i] = nullptr;
+            }
+            ERR_free_strings();
+            EVP_cleanup();
+            CRYPTO_cleanup_all_ex_data();
         }
+        shutdown(socketID[i], SD_BOTH);
         closesocket(socketID[i]); socketID[i] = -1;
     }
 }
@@ -224,7 +257,7 @@ bool SocketHandler::setSSLbrowser(const std::string& host) {
 
     if (SSL_accept(sslID[browser]) <= 0) {
         logger.logError(-28);
-        ERR_print_errors_fp(stderr);
+        // ERR_print_errors_fp(stderr);
         return false;
     }
     return true;
@@ -259,7 +292,7 @@ bool SocketHandler::setSSLserver(const std::string& host) {
         int err = SSL_get_error(sslID[server], -1);
         logger.logError(-32);
         // std::cerr << "SSL_connect failed with error code: " << err << '\n';
-        ERR_print_errors_fp(stderr);
+        // ERR_print_errors_fp(stderr);
         return false;
     }
 

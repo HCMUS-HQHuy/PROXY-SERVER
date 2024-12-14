@@ -542,7 +542,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         Window.proxy->stop(SIGINT);
         delete Window.proxy;
         Window.proxy = nullptr;
-        requestHandlerPool.~ThreadPool();
         PostQuitMessage(0);
         break;
 
