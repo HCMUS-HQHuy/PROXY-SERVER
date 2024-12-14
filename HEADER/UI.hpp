@@ -11,7 +11,6 @@
 #include <commctrl.h>
 #include "ProxyServer.hpp"
 #include <mutex>
-#include "ThreadPool.hpp"
 // ID của các controls
 #define BTN_START 1
 #define RADIO_MITM 2

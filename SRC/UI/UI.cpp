@@ -356,11 +356,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         Window.hwndHelp = CreateWindow(L"BUTTON", L"Help", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
             120, 90, 80, 30, hwnd, (HMENU)BTN_HELP, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndGroupMode = CreateWindow(L"BUTTON", L" Mode ", WS_VISIBLE | WS_CHILD | BS_GROUPBOX,
-<<<<<<< HEAD
-            20, 140, 180, 100, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-=======
             20, 140, 180, 100 + 4, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
->>>>>>> 55a6cf810ceed2422afc3e83a6f844246d04ea2d
         Window.hwndRadioMITM = CreateWindow(L"BUTTON", L"MITM", WS_VISIBLE | WS_CHILD | BS_RADIOBUTTON,
             30, 170 + 1, 120, 20, hwnd, (HMENU)RADIO_MITM, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndRadioTransparent = CreateWindow(L"BUTTON", L"Transparent", WS_VISIBLE | WS_CHILD | BS_RADIOBUTTON,
@@ -391,15 +387,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         // // Gửi thông điệp EM_SETRECT để cập nhật lề trên
         // SendMessage(Window.hwndEdit, EM_SETRECT, 0, (LPARAM)&rc);
         SendMessage(Window.hwndEdit, EM_SETREADONLY, TRUE, 0);
-<<<<<<< HEAD
-        SendMessage(Window.hwndEdit, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(3, 3));
-        SendMessage(Window.hwndBlacklist, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(3, 3));
-=======
         SendMessage(Window.hwndEdit, EM_SETBKGNDCOLOR, 0, (LPARAM)RGB(220, 220, 220));
         SendMessage(Window.hwndBlacklist, EM_SETBKGNDCOLOR, 0, (LPARAM)RGB(220, 220, 220));
         SendMessage(Window.hwndEdit, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(4, 4));
         SendMessage(Window.hwndBlacklist, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(4, 4));
->>>>>>> 55a6cf810ceed2422afc3e83a6f844246d04ea2d
         EnableWindow(Window.hwndSave, TRUE);
         std::wifstream file(Window.blacklistFilePath);
         std::wstring content((std::istreambuf_iterator<wchar_t>(file)), std::istreambuf_iterator<wchar_t>());
@@ -453,13 +444,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 size_t len = std::mbstowcs(nullptr, ip.c_str(), 0) + 1;  // Tính toán độ dài cần thiết
                 wchar_t* long_ip = new wchar_t[len];
                 std::mbstowcs(long_ip, ip.c_str(), len);
-<<<<<<< HEAD
-                Window.DisplayEdit(std::wstring(L"Proxy server is running...\r\nListening on IP: ") +
-                    std::wstring(long_ip) + std::wstring(L"\r\nPort: 8080"));
-=======
                 Window.DisplayEdit(std::wstring(L"Proxy server is listening on IPv4: ") +
                     std::wstring(long_ip) + std::wstring(L"\r\nPort: 8080...\r\n(local)\r\nUse loopback IPaddress: 127.0.0.1\r\nPort: 8080..."));
->>>>>>> 55a6cf810ceed2422afc3e83a6f844246d04ea2d
                 delete[] long_ip;
                 Window.isStarted = true;
                 if (!Window.proxy || Window.proxy->getType() != Window.type) {
