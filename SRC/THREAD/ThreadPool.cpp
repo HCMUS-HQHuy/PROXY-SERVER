@@ -58,5 +58,4 @@ ThreadPool::~ThreadPool() {
     condition.notify_all();
     for (std::thread& worker : workers) 
         if (worker.joinable()) worker.join();
-        else std::cerr << "HQH\n";
 }
