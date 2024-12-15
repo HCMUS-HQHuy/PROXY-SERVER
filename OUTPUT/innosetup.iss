@@ -31,7 +31,7 @@ DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
-OutputDir=G:\3_RESOURCES\2024-2025_HK3\MMT\Output
+OutputDir=G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\OUTPUT
 OutputBaseFilename=ProxyServerSetup
 SetupIconFile=G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\ASSETS\Proxy_Logo_white_background.ico
 Compression=lzma
@@ -66,7 +66,7 @@ Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\SupportedTypes
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\ASSETS\Proxy_Logo_white_background.ico"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\ASSETS\Proxy_Logo_white_background.ico"; Tasks: desktopicon
-Name: "{commonstartmenu}\Programs\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\ASSETS\Proxy_Logo_white_background.ico"
+Name: "{userstartmenu}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\ASSETS\Proxy_Logo_white_background.ico"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
