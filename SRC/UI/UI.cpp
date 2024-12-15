@@ -363,7 +363,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             30, 200 + 3, 120, 20, hwnd, (HMENU)RADIO_TRANSPARENT, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
 
         // Tạo hwndEdit
-        Window.hwndEdit = CreateWindow(MSFTEDIT_CLASS, L"Content hello", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL | ES_MULTILINE,
+        Window.hwndEdit = CreateWindow(MSFTEDIT_CLASS, L"", WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL | ES_MULTILINE,
             220, 40, 440, 200 + 4, hwnd, (HMENU)EDIT_DISPLAY, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         Window.hwndTitleMessage = CreateWindow( L"STATIC", L"Message", // Văn bản hiển thị
                                                 WS_VISIBLE | WS_CHILD | SS_CENTER,
@@ -483,7 +483,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         case BTN_HELP: {
             Window.disableUpdatingLog();            
 
-            SetWindowText(Window.hwndEdit, L"Help:\r\n- Start: Start/Stop system.\r\n- Choose Mode: Select mode.\r\n- Blacklist: Edit blocked items.\r\n- Log: View logs.");
+            SetWindowText(Window.hwndEdit, L"Help:\r\n- Start: Start/Stop system.\r\n- Mode: Select mode.\r\n- Blacklist: Edit blocked items.\r\n- Log: View logs.");
             break;
         }
 
