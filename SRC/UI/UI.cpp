@@ -444,8 +444,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 size_t len = std::mbstowcs(nullptr, ip.c_str(), 0) + 1;  // Tính toán độ dài cần thiết
                 wchar_t* long_ip = new wchar_t[len];
                 std::mbstowcs(long_ip, ip.c_str(), len);
-                Window.DisplayEdit(std::wstring(L"Proxy server is listening on IPv4: ") +
-                    std::wstring(long_ip) + std::wstring(L"\r\nPort: 8080...\r\n(local)\r\nUse loopback IPaddress: 127.0.0.1\r\nPort: 8080..."));
+                Window.DisplayEdit(std::wstring(L"- Proxy server is listening on IPv4: ") +
+                    std::wstring(long_ip) + std::wstring(L" Port: 8080...\r\n- (LOCAL) Use loopback IPaddress: 127.0.0.1 Port: 8080..."));
                 delete[] long_ip;
                 Window.isStarted = true;
                 if (!Window.proxy || Window.proxy->getType() != Window.type) {
