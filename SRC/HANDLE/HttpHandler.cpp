@@ -1,6 +1,9 @@
 #include "./../../HEADER/HttpHandler.hpp"
 #include "./../../HEADER/Logger.hpp"
 
+#include <sstream>
+#include <map>
+
 void debugerString(const string &name, const string &buffer) {
     std::cerr << "\n-----------------------------------------------\n";
     std::cerr << name << " -> START BUFFFER \n";
@@ -154,4 +157,60 @@ string HttpHandler::getHeader() {
 
 string HttpHandler::getBody() {
     return body;
+}
+
+// Hàm phân tích HTTP GET request
+void HttpHandler::parseHttpRequest(SOCKET sock) {
+    std::string requestLine, headerLine, body;
+    std::istringstream stream(header);
+
+    // Biến lưu thông tin
+    std::string method, uri, httpVersion, cookie, host;
+    std::map<std::string, std::string> headers;
+
+    // Đọc dòng đầu tiên (Request Line)
+    std::getline(stream, requestLine);
+    std::istringstream requestLineStream(requestLine);
+    requestLineStream >> method >> uri >> httpVersion;
+
+    // Đọc headers
+    while (std::getline(stream, headerLine) && headerLine != "\r") {
+        size_t colonPos = headerLine.find(":");
+        if (colonPos != std::string::npos) {
+            std::string headerName = headerLine.substr(0, colonPos);
+            std::string headerValue = headerLine.substr(colonPos + 2); // Bỏ qua ": "
+            headers[headerName] = headerValue;
+        }
+    }
+    // Lưu riêng cookie (nếu có)
+    if (headers.find("Cookie") != headers.end()) {
+        cookie = headers["Cookie"];
+    }
+    if (headers.find("Host") != headers.end())
+        host = headers["Host"];
+
+    std::cout << "Method: " << method << std::endl;
+    std::cout << "URI: " << uri << std::endl;
+    std::cout << "HTTP Version: " << httpVersion << std::endl;
+    std::cout << "Host: " << host << std::endl;
+    std::cout << "cookie: " << cookie << std::endl;
+
+    sockaddr_in clientAddr;
+    int addrLen = sizeof(clientAddr);
+
+    // Lấy thông tin địa chỉ của client
+    if (getpeername(sock, (sockaddr*)&clientAddr, &addrLen) == 0) {
+        // Lấy địa chỉ IP của client
+        char clientIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &clientAddr.sin_addr, clientIP, INET_ADDRSTRLEN);
+
+        // Lấy cổng của client
+        int clientPort = ntohs(clientAddr.sin_port);
+
+        // In ra thông tin
+        std::cout << "Client connected: IP = " << clientIP 
+                  << ", Port = " << clientPort << std::endl;
+    } else {
+        std::cerr << "Failed to get client info: " << WSAGetLastError() << std::endl;
+    }
 }

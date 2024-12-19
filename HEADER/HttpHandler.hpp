@@ -30,7 +30,6 @@ private:
 
 protected: 
     SocketHandler* socketHandler;
-    void printHeader();
 public:
     HttpHandler();
     ~HttpHandler();
@@ -40,6 +39,7 @@ public:
     bool isEndMessage();
     string getHeader();
     string getBody();
+    void parseHttpRequest(SOCKET sock);
 };
 
 #endif
