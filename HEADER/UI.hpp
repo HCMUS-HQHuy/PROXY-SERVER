@@ -81,7 +81,54 @@ struct PUI {
     void start();
     void DisplayEdit(const std::wstring &content);
     void AppendEdit(const std::wstring& content);
-    void AppendList(const std::wstring col1, const std::wstring col2, const std::wstring col3);
+
+    template <typename... Args>
+    void PUI::AppendList(Args&&... args) {
+        std::lock_guard<std::mutex> lock(mtx);
+
+        // Tạm thời tắt việc vẽ lại để tránh giật
+        SendMessage(hwndList, WM_SETREDRAW, FALSE, 0);
+
+        // Kiểm tra số lượng dòng hiện tại
+        int itemCount = ListView_GetItemCount(hwndList);
+        int firstLine = SendMessage(hwndList, LVM_GETTOPINDEX, 0, 0);
+
+        // Nếu số lượng dòng vượt quá MAX_LINES, xóa dòng đầu tiên
+        bool isDel = false;
+        if (itemCount >= MAX_LINES) {
+            ListView_DeleteItem(hwndList, 0);
+            itemCount--; // Cập nhật lại số lượng dòng sau khi xóa
+            isDel = true;
+        }
+
+        // Tạo danh sách các đối số
+        std::vector<std::wstring> rowData = {std::forward<Args>(args)...};
+
+        // Tạo một hàng mới
+        LVITEM lvItem = {};
+        lvItem.mask = LVIF_TEXT;
+        lvItem.iItem = itemCount; // Hàng mới sẽ nằm ở cuối
+        lvItem.iSubItem = 0; // Luôn bắt đầu với cột đầu tiên
+        lvItem.pszText = (LPWSTR)rowData[0].c_str(); // Dữ liệu cho cột đầu tiên
+        ListView_InsertItem(hwndList, &lvItem);
+
+        // Thêm dữ liệu vào các cột còn lại
+        int columnCount = Header_GetItemCount(ListView_GetHeader(hwndList));
+        for (size_t i = 1; i < rowData.size() && i < (size_t)columnCount; ++i) {
+            ListView_SetItemText(hwndList, lvItem.iItem, i, (LPWSTR)rowData[i].c_str());
+        }
+
+        // Kiểm tra nếu cuộn đã ở cuối, cuộn đến dòng cuối cùng
+        if (this->IsAtBottomList()) {
+            SendMessage(hwndList, LVM_ENSUREVISIBLE, itemCount, TRUE);
+        } else {
+            SendMessage(hwndList, LVM_ENSUREVISIBLE, firstLine - isDel, TRUE);
+        }
+
+        // Bật lại việc vẽ lại và làm mới cửa sổ
+        SendMessage(hwndList, WM_SETREDRAW, TRUE, 0);
+        InvalidateRect(hwndList, NULL, TRUE);
+    }
 };
 
 int GetLineHeight(HWND hwnd);

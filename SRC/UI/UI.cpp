@@ -265,46 +265,6 @@ void PUI::DisplayEdit(const std::wstring& content) {
     SetWindowText(hwndEdit, content.c_str());
 }
 
-void PUI::AppendList(const std::wstring state, const std::wstring host, const std::wstring port) {
-    std::lock_guard<std::mutex> lock(mtx);
-    // Tạm thời tắt việc vẽ lại để tránh giật
-    SendMessage(hwndList, WM_SETREDRAW, FALSE, 0);
-
-    // Kiểm tra số lượng dòng hiện tại
-    int itemCount = ListView_GetItemCount(hwndList);
-    int firstLine = SendMessage(hwndList, LVM_GETTOPINDEX, 0, 0);
-    // Nếu số lượng dòng vượt quá maxLines, xóa dòng đầu tiên
-    bool isDel = false;
-    if (itemCount >= MAX_LINES) {
-        ListView_DeleteItem(hwndList, 0);
-        itemCount--; // Cập nhật lại số lượng dòng sau khi xóa
-        isDel = true;
-    }
-
-    LVITEM lvItem;
-    lvItem.mask = LVIF_TEXT;
-
-    lvItem.iItem = SendMessage(hwndList, LVM_GETITEMCOUNT, 0, 0);
-    lvItem.iSubItem = 0;
-    lvItem.pszText = (LPWSTR)state.c_str();
-    ListView_InsertItem(hwndList, &lvItem);
-    ListView_SetItemText(hwndList, lvItem.iItem, 1, (LPWSTR)host.c_str());
-    ListView_SetItemText(hwndList, lvItem.iItem, 2, (LPWSTR)port.c_str());
-
-    // Kiểm tra nếu cuộn đã ở cuối, cuộn đến dòng cuối cùng
-    if (this->IsAtBottomList()) {
-        // Cuộn đến dòng cuối cùng
-        SendMessage(hwndList, LVM_ENSUREVISIBLE, itemCount, TRUE);
-    } else {
-        SendMessage(hwndList, LVM_ENSUREVISIBLE, firstLine - isDel, TRUE);
-    }
-
-    // Bật lại việc vẽ lại và làm mới cửa sổ
-    SendMessage(hwndList, WM_SETREDRAW, TRUE, 0);
-    InvalidateRect(hwndList, NULL, TRUE);
-}
-
-
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_PAINT: {
@@ -411,20 +371,41 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         ZeroMemory(&lvColumn, sizeof(lvColumn)); // Reset the structure
         lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 
-        lvColumn.pszText = (LPWSTR)L"State";
-        lvColumn.cx = 100;
+        lvColumn.pszText = (LPWSTR)L"STATUS";
+        lvColumn.cx = 70;
         lvColumn.iSubItem = 0;
         ListView_InsertColumn(Window.hwndList, 0, &lvColumn);
 
-        lvColumn.pszText = (LPWSTR)L"Host";
-        lvColumn.cx = 400;
+        lvColumn.pszText = (LPWSTR)L"VERSION";
+        lvColumn.cx = 70;
         lvColumn.iSubItem = 1;
         ListView_InsertColumn(Window.hwndList, 1, &lvColumn);
 
-        lvColumn.pszText = (LPWSTR)L"Port";
-        lvColumn.cx = 133;
+        lvColumn.pszText = (LPWSTR)L"SOURCE";
+        lvColumn.cx = 100;
+        lvColumn.iSubItem = 3;
+        ListView_InsertColumn(Window.hwndList, 3, &lvColumn);
+
+        lvColumn.pszText = (LPWSTR)L"DESTINATION";
+        lvColumn.cx = 120;
+        lvColumn.iSubItem = 4;
+        ListView_InsertColumn(Window.hwndList, 4, &lvColumn);
+
+        lvColumn.pszText = (LPWSTR)L"METHOD";
+        lvColumn.cx = 70;
         lvColumn.iSubItem = 2;
         ListView_InsertColumn(Window.hwndList, 2, &lvColumn);
+
+        lvColumn.pszText = (LPWSTR)L"URI";
+        lvColumn.cx = 120;
+        lvColumn.iSubItem = 5;
+        ListView_InsertColumn(Window.hwndList, 5, &lvColumn);
+
+        lvColumn.pszText = (LPWSTR)L"COOKIE";
+        lvColumn.cx = 100;
+        lvColumn.iSubItem = 6;
+        ListView_InsertColumn(Window.hwndList, 6, &lvColumn);
+
 
         break;
     }

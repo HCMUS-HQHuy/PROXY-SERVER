@@ -72,6 +72,7 @@
         "codecvt": "cpp",
         "csignal": "cpp",
         "*.inc": "cpp",
-        "applink.c": "cpp"
+        "applink.c": "cpp",
+        "text_encoding": "cpp"
     }
 }

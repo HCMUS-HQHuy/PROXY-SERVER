@@ -1,3 +1,4 @@
+#include "./../../HEADER/UI.hpp"
 #include "./../../HEADER/HttpHandler.hpp"
 #include "./../../HEADER/Logger.hpp"
 
@@ -189,11 +190,11 @@ void HttpHandler::parseHttpHeader(SOCKET sock) {
     if (headers.find("Host") != headers.end())
         host = headers["Host"];
 
-    std::cout << "Method: " << method << std::endl;
-    std::cout << "URI: " << uri << std::endl;
-    std::cout << "HTTP Version: " << httpVersion << std::endl;
-    std::cout << "Host: " << host << std::endl;
-    std::cout << "cookie: " << cookie << std::endl;
+    // std::cout << "Method: " << method << std::endl;
+    // std::cout << "URI: " << uri << std::endl;
+    // std::cout << "HTTP Version: " << httpVersion << std::endl;
+    // std::cout << "Host: " << host << std::endl;
+    // std::cout << "cookie: " << cookie << std::endl;
 
     sockaddr_in clientAddr;
     int addrLen = sizeof(clientAddr);
@@ -207,9 +208,15 @@ void HttpHandler::parseHttpHeader(SOCKET sock) {
         // Lấy cổng của client
         int clientPort = ntohs(clientAddr.sin_port);
 
-        // In ra thông tin
-        std::cout << "Client connected: IP = " << clientIP 
-                  << ", Port = " << clientPort << std::endl;
+        std::string source(clientIP);
+        source += ":" + std::to_string(clientPort);
+        // // In ra thông tin
+        // std::cout << "Client connected: IP = " << clientIP 
+        //           << ", Port = " << clientPort << std::endl;
+        Window.AppendList(L"Allow", std::wstring(httpVersion.begin(), httpVersion.end()), std::wstring(method.begin(), method.end()), 
+            std::wstring(source.begin(), source.end()), std::wstring(host.begin(), host.end()),
+            std::wstring(uri.begin(), uri.end()),
+            std::wstring(cookie.begin(), cookie.end()));
     } else {
         std::cerr << "Failed to get client info: " << WSAGetLastError() << std::endl;
     }
