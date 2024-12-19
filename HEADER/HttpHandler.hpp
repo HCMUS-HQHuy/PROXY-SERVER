@@ -39,7 +39,7 @@ public:
     bool isEndMessage();
     string getHeader();
     string getBody();
-    void parseHttpRequest(SOCKET sock);
+    void parseHttpHeader(SOCKET sock);
 };
 
 #endif

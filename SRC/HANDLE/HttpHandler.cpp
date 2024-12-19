@@ -160,7 +160,7 @@ string HttpHandler::getBody() {
 }
 
 // Hàm phân tích HTTP GET request
-void HttpHandler::parseHttpRequest(SOCKET sock) {
+void HttpHandler::parseHttpHeader(SOCKET sock) {
     std::string requestLine, headerLine, body;
     std::istringstream stream(header);
 
