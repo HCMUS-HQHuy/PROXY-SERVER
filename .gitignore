@@ -13,5 +13,4 @@ dependencies.txt
 .DOC
 CONFIG/blocked_sites.txt
 proxy_errors.log
-.gitigore
 .REFERENCE
