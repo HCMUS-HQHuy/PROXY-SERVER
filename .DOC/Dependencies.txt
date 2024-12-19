@@ -1,0 +1,52 @@
+Cấu trúc project như sau: header nằm trong thư mục HEADER, code nằm trong thư mục SRC.
+Phụ thuộc: 
+File ./SRC/SERVER/ProxyServer.cpp:
+#include "./../../HEADER/ProxyServer.hpp"
+#include "./../../HEADER/ClientHandler.hpp"
+File ./HEADER/ProxyServer.hpp:
+#include "./Setting.hpp"
+#include "./NetworkManager.hpp"
+#include "./ThreadPool.hpp"
+
+File ./SRC/BLOCKURL/BlackList.cpp:
+#include "./../../HEADER/BlackList.hpp"
+File ./SRC/HANDLE/ClientHandler.cpp:
+#include "./../../HEADER/ClientHandler.hpp"
+#include "./../../HEADER/BlackList.hpp"
+FILE ./HEADER/ClientHandler.hpp:
+#include "./setting.hpp"
+#include "./SocketHandler.hpp"
+#include "./Request.hpp"
+#include "./Response.hpp"
+#include "./ThreadManager.hpp"
+
+File ./SRC/HANDLE/HttpHandler.cpp:
+#include "./../../HEADER/HttpHandler.hpp"
+
+File ./SRC/HANDLE/Request.cpp:
+#include "./../../HEADER/Request.hpp"
+File ./HEADER/Request.hpp:
+#include "./Setting.hpp"
+#include "./HttpHandler.hpp"
+
+File ./SRC/HANDLE/Response.cpp:
+#include "./../../HEADER/Response.hpp"
+File ./HEADER/Response.hpp:
+#include "./Setting.hpp"
+#include "./HttpHandler.hpp"
+
+File ./SRC/HANDLE/SocketHandler.cpp:
+#include "./../../HEADER/SocketHandler.hpp"
+File ./SRC/NETWORK/NetworkManager.cpp:
+#include "./../../HEADER/NetworkManager.hpp"
+File ./SRC/THREAD/ThreadManager.cpp:
+#include "./../../HEADER/ThreadManager.hpp"
+
+File ./SRC/THREAD/ThreadPool.cpp:
+#include "./../../HEADER/ThreadPool.hpp"
+File ./HEADER/ThreadPool.hpp:
+#include "./ClientHandler.hpp"
+
+File ./SRC/main.cpp:
+#include "./../HEADER/Setting.hpp"
+#include "./../HEADER/ProxyServer.hpp"
