@@ -36,7 +36,6 @@ void RequestHandler::handleRequest() {
         int bytesReceived = receiveMessage(browser);
         sendMessage(server, bytesReceived);
     }
-    parseHttpHeader(socketHandler->socketID[browser]);
 }
 
 bool RequestHandler::receiveRequest(SOCKET sock) {

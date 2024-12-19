@@ -160,8 +160,13 @@ string HttpHandler::getBody() {
     return body;
 }
 
+std::wstring convert(string &s) {
+    if (s.empty()) return L"NA";
+    return std::wstring(s.begin(), s.end());
+}
+
 // Hàm phân tích HTTP GET request
-void HttpHandler::parseHttpHeader(SOCKET sock) {
+void HttpHandler::parseHttpHeader(SOCKET sock, bool isAllow) {
     std::string requestLine, headerLine, body;
     std::istringstream stream(header);
 
@@ -173,6 +178,11 @@ void HttpHandler::parseHttpHeader(SOCKET sock) {
     std::getline(stream, requestLine);
     std::istringstream requestLineStream(requestLine);
     requestLineStream >> method >> uri >> httpVersion;
+    if (method == "CONNECT") uri.clear();
+    size_t p = uri.find(":");
+    if (p != std::string::npos) {
+        uri.erase(p);
+    }
 
     // Đọc headers
     while (std::getline(stream, headerLine) && headerLine != "\r") {
@@ -190,34 +200,22 @@ void HttpHandler::parseHttpHeader(SOCKET sock) {
     if (headers.find("Host") != headers.end())
         host = headers["Host"];
 
-    // std::cout << "Method: " << method << std::endl;
-    // std::cout << "URI: " << uri << std::endl;
-    // std::cout << "HTTP Version: " << httpVersion << std::endl;
-    // std::cout << "Host: " << host << std::endl;
-    // std::cout << "cookie: " << cookie << std::endl;
+    p = host.find(":");
+    if (p != std::string::npos) {
+        host.erase(p);
+    }
+
+    std::string source;
 
     sockaddr_in clientAddr;
     int addrLen = sizeof(clientAddr);
-
-    // Lấy thông tin địa chỉ của client
     if (getpeername(sock, (sockaddr*)&clientAddr, &addrLen) == 0) {
         // Lấy địa chỉ IP của client
         char clientIP[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &clientAddr.sin_addr, clientIP, INET_ADDRSTRLEN);
-
         // Lấy cổng của client
         int clientPort = ntohs(clientAddr.sin_port);
-
-        std::string source(clientIP);
-        source += ":" + std::to_string(clientPort);
-        // // In ra thông tin
-        // std::cout << "Client connected: IP = " << clientIP 
-        //           << ", Port = " << clientPort << std::endl;
-        Window.AppendList(L"Allow", std::wstring(httpVersion.begin(), httpVersion.end()), std::wstring(method.begin(), method.end()), 
-            std::wstring(source.begin(), source.end()), std::wstring(host.begin(), host.end()),
-            std::wstring(uri.begin(), uri.end()),
-            std::wstring(cookie.begin(), cookie.end()));
-    } else {
-        std::cerr << "Failed to get client info: " << WSAGetLastError() << std::endl;
+        source = std::string(clientIP) + ":" + std::to_string(clientPort);
     }
+    Window.AppendList((isAllow ? L"Allow" :L"Block"), convert(httpVersion), convert(method), convert(source), convert(host), convert(uri), convert(cookie));
 }

@@ -39,7 +39,7 @@ public:
     bool isEndMessage();
     string getHeader();
     string getBody();
-    void parseHttpHeader(SOCKET sock);
+    void parseHttpHeader(SOCKET sock, bool isAllow);
 };
 
 #endif

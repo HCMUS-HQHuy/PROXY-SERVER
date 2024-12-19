@@ -119,16 +119,17 @@ bool ClientHandler::handleConnection(SOCKET sock) {
     if ((!isMITM || port == HTTP_PORT) && blackList.isMember(host)) {
         logger.logError(-7);
         // std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
-        Window.AppendList(L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
+        // Window.AppendList(L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
+        request.parseHttpHeader(sock, false);
         host.clear(); closesocket(sock);
         return false;
     }
 
     if (!blackList.isMember(host)) {
         // std::cerr << "ALLOWED! -> host:" << host << " port:" << port << '\n';
-
-        Window.AppendList(L"Allow", std::wstring(host.begin(), host.end()), std::to_wstring(port));
-    }
+        request.parseHttpHeader(sock, true);
+        // Window.AppendList(L"Allow", std::wstring(host.begin(), host.end()), std::to_wstring(port));
+    } else request.parseHttpHeader(sock, false);
 
     remote = connectToServer();
     if (port == HTTPS_PORT) {
@@ -217,8 +218,6 @@ void ClientHandler::handleMITM() {
             blockMessage;
 
         SSL_write(socketHandler->sslID[browser], response.c_str(), response.size());
-        // std::cerr << "BLOCKED! -> host:" << host << " port:" << port << '\n';
-        Window.AppendList(L"Block", std::wstring(host.begin(), host.end()), std::to_wstring(port));
         return;
     }
 
@@ -259,6 +258,7 @@ void ClientHandler::handleMITM() {
                 try {
                     RequestHandler request(this->socketHandler);
                     request.handleRequest();
+                    request.parseHttpHeader(this->socketHandler->socketID[browser], true);
                 } catch (...) {
                     // Xử lý lỗi nếu cần
                 }

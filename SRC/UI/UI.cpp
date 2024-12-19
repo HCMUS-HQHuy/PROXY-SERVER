@@ -372,7 +372,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 
         lvColumn.pszText = (LPWSTR)L"STATUS";
-        lvColumn.cx = 70;
+        lvColumn.cx = 60;
         lvColumn.iSubItem = 0;
         ListView_InsertColumn(Window.hwndList, 0, &lvColumn);
 
