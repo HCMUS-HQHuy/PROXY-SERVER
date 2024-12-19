@@ -1,0 +1,17 @@
+TEST.cpp
+*.exe
+BIN/
+BUILD/
+.vscode
+tmp.cpp
+GENERATED_CER/
+tmp.txt
+FIND.txt
+note.txt
+dependencies.txt
+*.log
+.DOC
+CONFIG/blocked_sites.txt
+proxy_errors.log
+.gitigore
+.REFERENCE
