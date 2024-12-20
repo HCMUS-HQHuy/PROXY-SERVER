@@ -6,7 +6,7 @@ LIBS = -lMsftedit -lcomctl32 -lgdiplus -lgdi32 -luser32 -lws2_32 -liphlpapi -I".
 SRC_DIR = ./SRC
 HEADER_DIR = ./HEADER
 OBJ_DIR = ./BUILD
-OUTPUT = ./BIN/demo.exe
+OUTPUT = ./BIN/proxy.exe
 
 # Find all .cpp files in SRC_DIR
 SRC_FILES = $(wildcard $(SRC_DIR)/**/*.cpp) $(wildcard $(SRC_DIR)/*.cpp)
