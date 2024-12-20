@@ -402,7 +402,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         ListView_InsertColumn(Window.hwndList, 5, &lvColumn);
 
         lvColumn.pszText = (LPWSTR)L"COOKIE";
-        lvColumn.cx = 100;
+        lvColumn.cx = 92;
         lvColumn.iSubItem = 6;
         ListView_InsertColumn(Window.hwndList, 6, &lvColumn);
 
