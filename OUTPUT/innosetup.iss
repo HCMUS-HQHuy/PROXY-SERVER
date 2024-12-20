@@ -4,7 +4,7 @@
 #define MyAppName "ProxyServer"
 #define MyAppVersion "1.0"
 #define MyAppPublisher "Đỗ Huy, Quốc Huy, Ngọc Phú"
-#define MyAppExeName "demo.exe"
+#define MyAppExeName "proxy.exe"
 #define MyAppAssocName MyAppName + " File"
 #define MyAppAssocExt ".myp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
@@ -31,9 +31,9 @@ DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
-OutputDir=G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\OUTPUT
+OutputDir=E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\OUTPUT
 OutputBaseFilename=ProxyServerSetup
-SetupIconFile=G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\ASSETS\Proxy_Logo_white_background.ico
+SetupIconFile=E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\ASSETS\Proxy_Logo_white_background.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -45,15 +45,15 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\ASSETS\*"; DestDir: "{app}\ASSETS"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\CERTIFICATE\*"; DestDir: "{app}\CERTIFICATE"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\CONFIG\*"; DestDir: "{app}\CONFIG"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libcrypto-3-x64.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libgcc_s_seh-1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libssl-3-x64.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libstdc++-6.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "G:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libwinpthread-1.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\ASSETS\*"; DestDir: "{app}\ASSETS"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\CERTIFICATE\*"; DestDir: "{app}\CERTIFICATE"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\CONFIG\*"; DestDir: "{app}\CONFIG"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libcrypto-3-x64.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libgcc_s_seh-1.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libssl-3-x64.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libstdc++-6.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "E:\3_RESOURCES\2024-2025_HK3\MMT\PROXY\BIN\libwinpthread-1.dll"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]
