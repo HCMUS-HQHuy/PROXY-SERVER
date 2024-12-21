@@ -83,7 +83,7 @@ struct PUI {
     void AppendEdit(const std::wstring& content);
 
     template <typename... Args>
-    void PUI::AppendList(Args&&... args) {
+    void AppendList(Args&&... args) {
         std::lock_guard<std::mutex> lock(mtx);
 
         // Tạm thời tắt việc vẽ lại để tránh giật
