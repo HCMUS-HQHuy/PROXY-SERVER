@@ -70,7 +70,6 @@ bool generateCertificate(const std::string& host,
                          const std::string& rootCertPath) {
     FILE* f = fopen(outputCertPath.c_str(), "r");
     if (f != nullptr) {
-        logger.logMessage("Certificate already exists.");
         fclose(f);
         return true;
     }

@@ -191,14 +191,7 @@ void ClientHandler::handleRequest() {
 void ClientHandler::handleMITM() {
     if (socketHandler->isValid() == false) return;
     if (socketHandler->setSSLContexts(host) == false) return;
-
     if (blackList.isMember(host)) {
-        // std::string response = 
-        //     "HTTP/1.1 302 Found\r\n"
-        //     "Location: https://example.com\r\n"
-        //     "Content-Length: 0\r\n"
-        //     "Connection: close\r\n\r\n";
-
         std::string blockMessage = 
             "<!DOCTYPE html>"
             "<html>"
