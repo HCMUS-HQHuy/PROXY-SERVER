@@ -143,6 +143,9 @@ bool ClientHandler::handleConnection(SOCKET sock) {
         }
     }
     else request.sendRequest(remote);
+
+    // std::cout << request.getHeader() << "\n" << request.getBody() << '\n';
+
     if (isMITM) socketHandler = new SocketHandler(sock, remote, port==HTTPS_PORT);
     else socketHandler = new SocketHandler(sock, remote, false);
     return true;
@@ -180,8 +183,6 @@ SOCKET ClientHandler::connectToServer() {
     return remoteSocket;
 }
 
-#define TIMEOUT 100
-#define MAX_IDLE_TIME 2000
 
 void ClientHandler::handleRequest() {
     if (isMITM) handleMITM();
@@ -221,6 +222,9 @@ void ClientHandler::handleMITM() {
     }
 
     auto lastActivity = std::chrono::steady_clock::now();
+
+    const int TIMEOUT = 1000;
+    const int MAX_IDLE_TIME = 5000;
 
     while (ServerRunning) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
@@ -290,6 +294,9 @@ void ClientHandler::handleRelayData() {
     }
 
     auto lastActivity = std::chrono::steady_clock::now();
+
+    const int TIMEOUT = 1000;
+    const int MAX_IDLE_TIME = 5000;
 
     while (ServerRunning) {
         int ret = WSAPoll(fds, 2, TIMEOUT);
