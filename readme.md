@@ -1,4 +1,9 @@
 # Proxy Server Project
+<p align="center">
+  <img src="./ProxyServer.png" alt="Menu Screenshot"/>
+  <br/>
+  <em>SSL Proxy Server</em>
+</p>
 
 ## Overview
 This project implements a **Proxy Server** designed to handle client requests and forward them to the intended remote server. The primary objective of this application is to provide an intermediary server that facilitates secure communication and data exchange using SSL/TLS protocols.
@@ -68,14 +73,6 @@ ProxyServer
 - **Icons Not Displayed in Shortcuts:** Ensure the `.ico` file is in the correct directory and specified in the installer script.
 - **SSL Errors:** Verify that the certificate files in the `CERTIFICATE` directory are valid and correctly configured.
 - **Connection Issues:** Check firewall or network settings that may block the proxy server.
-
-## 🖼️ Screenshots
-
-<p align="center">
-  <img src="./ProxyServer.png" alt="Menu Screenshot" width="400"/>
-  <br/>
-  <em>Menu Screenshot</em>
-</p>
 
 ## Contributors
 - **Huỳnh Quốc Huy**
