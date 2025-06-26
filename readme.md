@@ -70,8 +70,8 @@ ProxyServer
 - **Connection Issues:** Check firewall or network settings that may block the proxy server.
 
 ## Contributors
-- **Đỗ Trọng Huy**
 - **Huỳnh Quốc Huy**
+- **Đỗ Trọng Huy**
 - **Hoàng Ngọc Phú**
 
 ## Acknowledgments
