@@ -69,6 +69,14 @@ ProxyServer
 - **SSL Errors:** Verify that the certificate files in the `CERTIFICATE` directory are valid and correctly configured.
 - **Connection Issues:** Check firewall or network settings that may block the proxy server.
 
+## 🖼️ Screenshots
+
+<p align="center">
+  <img src="./ProxyServer.png" alt="Menu Screenshot" width="400"/>
+  <br/>
+  <em>Menu Screenshot</em>
+</p>
+
 ## Contributors
 - **Huỳnh Quốc Huy**
 - **Đỗ Trọng Huy**
