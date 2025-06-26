@@ -42,7 +42,7 @@ int HttpHandler::sendMessage(Socket id, int sizeSending) {
     return bytesSent;
 }
 
-int HttpHandler::receiveMessage(Socket id, int size) {
+int HttpHandler::receiveMessage(Socket id, int size) { 
     int bytesReceived = 0; 
     Protocol protocol = socketHandler->protocol;
     if (protocol == HTTP) {
